@@ -1,6 +1,8 @@
 import os
 import glob
+import pyopencl as cl
 from jsonloader import JSONLoader
+from powertrain import Powertrain
 
 class DataGrabber:
 
@@ -30,6 +32,34 @@ class DataGrabber:
 
 
 
+    p = Powertrain(True)
+    p.program = """
+    const sampler_t sampler = CLK_NORMALIZED_COORDS_TRUE | 
+      CLK_FILTER_LINEAR | CLK_ADDRESS_CLAMP_TO_EDGE;
+
+    __kernel void downsample(__read_only image2d_t sourceImage, __write_only image2d_t targetImage)
+    {
+
+      int w = get_image_width(targetImage);
+      int h = get_image_height(targetImage);
+
+      int outX = get_global_id(0);
+      int outY = get_global_id(1);
+      int2 posOut = {outX, outY};
+
+      float inX = outX / (float) w;
+      float inY = outY / (float) h;
+      float2 posIn = {inX, inY};
+
+      float4 pixel = read_imagef(sourceImage, sampler, posIn);
+      write_imagef(targetImage, posOut, pixel);
+
+    }
+    """
+
+
     # load data 
     for s in sections:
       sections[s].load(input_dir)
+
+    # downsample data

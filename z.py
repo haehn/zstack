@@ -101,6 +101,6 @@ if __name__ == "__main__":
 
   data_grabber = _zstack.DataGrabber()
   data_grabber.run( input_dir )
-
+  sys.exit(1)
   server_logic = ServerLogic()
   server_logic.run( input_dir, output_dir )

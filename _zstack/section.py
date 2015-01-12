@@ -8,6 +8,7 @@ class Section:
     '''
     self._id = -1
     self._tiles = None
+    self._zoomlevels = None
 
   def __str__(self):
     '''

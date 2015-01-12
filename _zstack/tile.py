@@ -26,13 +26,11 @@ class Tile:
     '''
     Loads image data from disk.
     '''
-    for l in self._mipmapLevels:
+    # for l in self._mipmapLevels:
 
-      image = cv2.imread(os.path.join(prefix,self._mipmapLevels[l]['imageUrl']), cv2.CV_LOAD_IMAGE_GRAYSCALE)
+    image = cv2.imread(os.path.join(prefix,self._mipmapLevels["0"]['imageUrl']), cv2.CV_LOAD_IMAGE_GRAYSCALE)
 
-      self._mipmapLevels[l]['image'] = image
-
-      print 'loaded', l, image.shape
+    self._mipmapLevels["0"]['image'] = image
 
 
   @staticmethod
