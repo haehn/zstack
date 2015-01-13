@@ -8,6 +8,7 @@ class Section:
     '''
     self._id = -1
     self._tiles = None
+    self._downsampler = None
     self._zoomlevels = None
 
   def __str__(self):
@@ -21,6 +22,12 @@ class Section:
     for t in self._tiles:
       t.load(prefix)
 
+  def createMipMap(self, downsampler):
+    '''
+    '''
+    for t in self._tiles:
+      t._mipmap.create(downsampler)
+
   @staticmethod
   def fromJSON(json):
     '''
@@ -30,7 +37,9 @@ class Section:
     loaded_tiles = []
 
     for t in json:
-      loaded_tiles.append(Tile.fromJSON(t))
+      new_tile = Tile.fromJSON(t)
+      new_tile._section = new_section
+      loaded_tiles.append(new_tile)
 
     new_section._tiles = loaded_tiles
 

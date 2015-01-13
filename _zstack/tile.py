@@ -1,6 +1,8 @@
 import cv2
 import os
 
+from mipmap import MipMap
+
 class Tile:
   '''
   '''
@@ -15,7 +17,9 @@ class Tile:
     self._maxIntensity = -1
     self._minIntensity = -1
     self._mipmapLevels = None
+    self._mipmap = None
     self._transforms = None
+    self._section = None
 
   def __str__(self):
 
@@ -30,7 +34,8 @@ class Tile:
 
     image = cv2.imread(os.path.join(prefix,self._mipmapLevels["0"]['imageUrl']), cv2.CV_LOAD_IMAGE_GRAYSCALE)
 
-    self._mipmapLevels["0"]['image'] = image
+    # store in mipmap
+    self._mipmap = MipMap(image)
 
 
   @staticmethod
