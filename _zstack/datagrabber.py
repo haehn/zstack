@@ -36,7 +36,7 @@ class DataGrabber:
 
     }
     """
-    
+
 
     #
     # we are looking for JSON files in the input directory
@@ -67,3 +67,6 @@ class DataGrabber:
     # create mipmap
     for s in sections:
       sections[s].createMipMap(downsampler)
+
+    # print sections["0"]
+

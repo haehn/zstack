@@ -2,6 +2,8 @@ import cv2
 import os
 
 from mipmap import MipMap
+from rigidmodel2d import RigidModel2D
+from translationmodel2d import TranslationModel2D
 
 class Tile:
   '''
@@ -49,6 +51,16 @@ class Tile:
     new_tile._minIntensity = json['minIntensity']
     new_tile._maxIntensity = json['maxIntensity']
     new_tile._mipmapLevels = json['mipmapLevels']
-    new_tile._transforms = json['transforms']
+    jsonTransforms = json['transforms']
+    transforms = []
+    for t in jsonTransforms:
+      if t["className"] == "mpicbg.trakem2.transform.TranslationModel2D":
+        transforms.append(TranslationModel2D(t["dataString"]))
+      elif t["className"] == "mpicbg.trakem2.transform.RigidModel2D":
+        transforms.append(RigidModel2D(t["dataString"]))
+      else:
+        print 'Unsupported transforms', t["className"]
+
+    new_tile._transforms = transforms
 
     return new_tile
