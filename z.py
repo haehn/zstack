@@ -93,7 +93,7 @@ class ServerLogic:
     tile = self._data_grabber.getSection("W02_Sec001_Montage_montaged.json",zoomlevel)
 
     # output = StringIO.StringIO()
-    content = cv2.imencode('.jpg', tile[y*256:y*256+256,x*256:x*256+256])[1].tostring()
+    content = cv2.imencode('.jpg', tile[y*512:y*512+512,x*512:x*512+512])[1].tostring()
     content_type = 'image/jpeg'
 
 
