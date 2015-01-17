@@ -1,0 +1,31 @@
+<html>
+  <head>
+    <title>ZSTACK</title>
+    <script type='text/javascript' src='openseadragon.min.js'></script>
+    <script type='text/javascript'>
+
+    window.onload = function() {
+
+      OpenSeadragon({
+          id:            "body",
+          prefixUrl:     "images/",
+          navigatorSizeRatio: 0.25,
+          // wrapHorizontal:     true,
+          tileSources:   {
+              height: 47185,
+              width:  31784,
+              tileSize: 256,
+              getTileUrl: function( level, x, y ){
+                  return "/data/" +
+                          (level) + "-" + x + "-" + y;
+              }
+          }
+      });
+
+    }
+
+    </script>
+  </head>
+  <body id='body'>
+  </body>
+</html>

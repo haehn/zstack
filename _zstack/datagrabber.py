@@ -9,6 +9,8 @@ class DataGrabber:
 
   def __init__(self):
 
+    self._cache = {}
+
     self._sections = None
 
   def run(self, input_dir):
@@ -81,6 +83,12 @@ class DataGrabber:
     '''
     # stitch
 
+    if zoomlevel in self._cache:
+      # print 'CACHE HIT'
+      return self._cache[zoomlevel]
+
+    print 'CACHING', zoomlevel
+
     width = 0
     height = 0
 
@@ -105,6 +113,7 @@ class DataGrabber:
     # print width, height
 
     output = np.zeros((height, width), dtype=np.uint8)
+
     # print 'output', width, height
 
     for t in self._sections[id]._tiles:
@@ -123,6 +132,7 @@ class DataGrabber:
       # print int(offset_x),int(offset_x)+tile_width, int(offset_y),int(offset_y)+tile_height
       output[int(offset_y):int(offset_y)+tile_height,int(offset_x):int(offset_x)+tile_width] = pixels
 
-    print 'DONE'
+    self._cache[zoomlevel] = output
+    print 'DONE', zoomlevel
 
     return output

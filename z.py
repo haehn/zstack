@@ -44,7 +44,8 @@ class ServerLogic:
 
     webapp = tornado.web.Application([
 
-      (r'/(.*)', Handler, dict(logic=self))
+      (r'/viewer/(.*)', tornado.web.StaticFileHandler, dict(path=os.path.join(os.path.dirname(__file__),'web'))),
+      (r'/data/(.*)', Handler, dict(logic=self))
   
     ])
 
@@ -69,14 +70,30 @@ class ServerLogic:
     #
     #
 
-    zoomlevel = int(handler.request.uri.split('/')[-1])
+    requested_tile = handler.request.uri.split('/')[-1].split('-')
+    zoomlevel = int(requested_tile[0])
+    x = int(requested_tile[1])
+    y = int(requested_tile[2])
 
-    if not zoomlevel and zoomlevel != 0:
-      zoomlevel = 5
+    print 'req', zoomlevel, x, y
+
+    if zoomlevel > 16:
+      zoomlevel = 16
+
+
+    zoomlevel = 6 - (zoomlevel-10)
+
+
+
+
+
+
+
 
     tile = self._data_grabber.getSection("W02_Sec001_Montage_montaged.json",zoomlevel)
+
     # output = StringIO.StringIO()
-    content = cv2.imencode('.jpg', tile)[1].tostring()
+    content = cv2.imencode('.jpg', tile[y*256:y*256+256,x*256:x*256+256])[1].tostring()
     content_type = 'image/jpeg'
 
 
@@ -119,6 +136,13 @@ if __name__ == "__main__":
 
   data_grabber = _zstack.DataGrabber()
   data_grabber.run( input_dir )
+  # data_grabber.getSection("W02_Sec001_Montage_montaged.json",5)
+  # data_grabber.getSection("W02_Sec001_Montage_montaged.json",4)
+  # data_grabber.getSection("W02_Sec001_Montage_montaged.json",3)
+  # data_grabber.getSection("W02_Sec001_Montage_montaged.json",2)
+  # data_grabber.getSection("W02_Sec001_Montage_montaged.json",1)
+  # data_grabber.getSection("W02_Sec001_Montage_montaged.json",0)
+
 
   server_logic = ServerLogic()
   server_logic.run( data_grabber )
