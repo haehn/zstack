@@ -44,3 +44,10 @@ class MipMap(object):
       in_img = out_img
 
     # print self._levels
+
+  def get(self, level):
+    '''
+    '''
+
+    return self._levels[level]
+    

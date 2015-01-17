@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import cv2
 import os
 import sys
 import socket
@@ -31,11 +32,13 @@ class ServerLogic:
   def __init__( self ):
     '''
     '''
-    pass
+    self._data_grabber = None
 
-  def run( self, input_dir, output_dir ):
+  def run( self, data_grabber ):
     '''
     '''
+    self._data_grabber = data_grabber
+
     ip = socket.gethostbyname(socket.gethostname())
     port = 2001
 
@@ -57,10 +60,25 @@ class ServerLogic:
 
     tornado.ioloop.IOLoop.instance().start()
 
-  def handle( self, r ):
+  def handle( self, handler ):
     '''
     '''
     content = None
+
+    #
+    #
+    #
+
+    zoomlevel = int(handler.request.uri.split('/')[-1])
+
+    if not zoomlevel and zoomlevel != 0:
+      zoomlevel = 5
+
+    tile = self._data_grabber.getSection(0,zoomlevel)
+    # output = StringIO.StringIO()
+    content = cv2.imencode('.jpg', tile)[1].tostring()
+    content_type = 'image/jpeg'
+
 
     # invalid request
     if not content:
@@ -69,9 +87,9 @@ class ServerLogic:
 
     # print 'IP',r.request.remote_ip
 
-    r.set_header('Access-Control-Allow-Origin', '*')
-    r.set_header('Content-Type', content_type)
-    r.write(content)
+    handler.set_header('Access-Control-Allow-Origin', '*')
+    handler.set_header('Content-Type', content_type)
+    handler.write(content)
 
 
 
@@ -101,6 +119,6 @@ if __name__ == "__main__":
 
   data_grabber = _zstack.DataGrabber()
   data_grabber.run( input_dir )
-  sys.exit(1)
+
   server_logic = ServerLogic()
-  server_logic.run( input_dir, output_dir )
+  server_logic.run( data_grabber )

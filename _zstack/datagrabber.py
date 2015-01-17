@@ -8,7 +8,7 @@ class DataGrabber:
 
   def __init__(self):
 
-    pass
+    self._sections = None
 
   def run(self, input_dir):
 
@@ -68,5 +68,18 @@ class DataGrabber:
     for s in sections:
       sections[s].createMipMap(downsampler)
 
-    # print sections["0"]
+    self._sections = sections
 
+    # print sections["0"]
+    # tile = self.getSection(0,5)
+    # print tile.shape
+
+
+  def getSection(self, id, zoomlevel):
+    '''
+    '''
+    # stitch
+    tile = self._sections[self._sections.keys()[id]]._tiles[0]._mipmap.get(zoomlevel)
+
+    return tile
+    
