@@ -38,6 +38,38 @@ class DataGrabber:
       write_imagef(targetImage, posOut, pixel);
 
     }
+
+    __kernel void transform(__read_only image2d_t sourceImage,
+                            const float angle,
+                            const float Tx,
+                            const float Ty,
+                            __write_only image2d_t targetImage)
+    {
+
+      int w = get_image_width(targetImage);
+      int h = get_image_height(targetImage);
+
+      int outX = get_global_id(0);
+      int outY = get_global_id(1);
+      int2 posOut = {outX, outY};
+
+      float inX = outX / (float) w;
+      float inY = outY / (float) h;
+      
+      // 
+      float c = cos(angle);
+      float s = sin(angle);
+
+      // new position
+      float new_col = c * inX - s * inY + Tx;
+      float new_row = s * inX + c * inY + Ty;
+      float2 posIn = {new_col, new_row};
+
+
+      float4 pixel = read_imagef(sourceImage, sampler, posIn);
+      write_imagef(targetImage, posOut, pixel);
+
+    }
     """
 
 
