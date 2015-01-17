@@ -1,5 +1,6 @@
 import os
 import glob
+import numpy as np
 import pyopencl as cl
 from jsonloader import JSONLoader
 from powertrain import Powertrain
@@ -79,7 +80,49 @@ class DataGrabber:
     '''
     '''
     # stitch
-    tile = self._sections[self._sections.keys()[id]]._tiles[0]._mipmap.get(zoomlevel)
 
-    return tile
-    
+    width = 0
+    height = 0
+
+
+    for t in self._sections[id]._tiles:
+      pixels = t._mipmap.get(zoomlevel)
+      tile_width = pixels.shape[0]
+      tile_height = pixels.shape[1]
+      transforms = t._transforms
+      offset_x, offset_y = (transforms[0].x, transforms[0].y)
+      # print 'offsets', offset_x, offset_y
+      k = 0
+      while k < zoomlevel:
+        offset_x /= 2
+        offset_y /= 2
+        k += 1    
+
+      # print 'adj. offsets', offset_x
+      width = max(width, tile_width+offset_x)
+      height = max(height, tile_height+offset_y)
+
+    # print width, height
+
+    output = np.zeros((height, width), dtype=np.uint8)
+    # print 'output', width, height
+
+    for t in self._sections[id]._tiles:
+      pixels = t._mipmap.get(zoomlevel)
+      tile_width = pixels.shape[0]
+      tile_height = pixels.shape[1]
+      transforms = t._transforms
+      offset_x, offset_y = (transforms[0].x, transforms[0].y)
+      # print 'offsets', offset_x, offset_y
+      k = 0
+      while k < zoomlevel:
+        offset_x /= 2
+        offset_y /= 2
+        k += 1    
+
+      # print int(offset_x),int(offset_x)+tile_width, int(offset_y),int(offset_y)+tile_height
+      output[int(offset_y):int(offset_y)+tile_height,int(offset_x):int(offset_x)+tile_width] = pixels
+
+    print 'DONE'
+
+    return output

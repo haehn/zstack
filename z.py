@@ -74,7 +74,7 @@ class ServerLogic:
     if not zoomlevel and zoomlevel != 0:
       zoomlevel = 5
 
-    tile = self._data_grabber.getSection(0,zoomlevel)
+    tile = self._data_grabber.getSection("W02_Sec001_Montage_montaged.json",zoomlevel)
     # output = StringIO.StringIO()
     content = cv2.imencode('.jpg', tile)[1].tostring()
     content_type = 'image/jpeg'

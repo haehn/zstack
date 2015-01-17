@@ -3,7 +3,7 @@ class Transform(object):
   def __init__(self, dataString):
     '''
     '''
-    self._data = dataString.split(' ')
+    self._data = map(float, dataString.split(' '))
 
 
 
