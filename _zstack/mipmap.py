@@ -12,7 +12,7 @@ class MipMap(object):
     # count zoom levels
     k = 0
     width = self._width
-    while width >= 512:
+    while width >= 256:
       width /= 2
       k += 1
 
