@@ -146,12 +146,12 @@ class DataGrabber:
 
       print output.shape, width, height
 
-      output.resize((height+1, width+1))
+      output.resize((height, width))
 
       print output.shape
 
       # print int(offset_x),int(offset_x)+tile_width, int(offset_y),int(offset_y)+tile_height
-      output[int(offset_y):int(offset_y)+tile_height,int(offset_x):int(offset_x)+tile_width] = pixels
+      output[offset_y:offset_y+tile_height,offset_x:offset_x+tile_width] = pixels
 
     self._cache[zoomlevel] = output
     print 'DONE', zoomlevel
