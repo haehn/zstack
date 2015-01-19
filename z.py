@@ -75,7 +75,10 @@ class ServerLogic:
     x = int(requested_tile[1])
     y = int(requested_tile[2])
 
-    print 'req', zoomlevel, x, y
+    # print 'req', zoomlevel, x, y
+
+    if zoomlevel < 10:
+      zoomlevel = 10
 
     if zoomlevel > 16:
       zoomlevel = 16
