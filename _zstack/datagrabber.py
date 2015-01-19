@@ -124,6 +124,8 @@ class DataGrabber:
     width = 0
     height = 0
 
+    output = np.zeros((0,0), dtype=np.uint8)
+
 
     for t in self._sections[id]._tiles:
       pixels = t._mipmap.get(zoomlevel)
@@ -142,24 +144,11 @@ class DataGrabber:
       width = max(width, tile_width+offset_x)
       height = max(height, tile_height+offset_y)
 
-    # print width, height
+      print output.shape, width, height
 
-    output = np.zeros((height, width), dtype=np.uint8)
+      output.resize((height+1, width+1))
 
-    # print 'output', width, height
-
-    for t in self._sections[id]._tiles:
-      pixels = t._mipmap.get(zoomlevel)
-      tile_width = pixels.shape[0]
-      tile_height = pixels.shape[1]
-      transforms = t._transforms
-      offset_x, offset_y = (transforms[0].x, transforms[0].y)
-      # print 'offsets', offset_x, offset_y
-      k = 0
-      while k < zoomlevel:
-        offset_x /= 2
-        offset_y /= 2
-        k += 1    
+      print output.shape
 
       # print int(offset_x),int(offset_x)+tile_width, int(offset_y),int(offset_y)+tile_height
       output[int(offset_y):int(offset_y)+tile_height,int(offset_x):int(offset_x)+tile_width] = pixels

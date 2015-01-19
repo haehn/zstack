@@ -83,7 +83,7 @@ class ServerLogic:
 
     zoomlevel = 6 - (zoomlevel-10)
 
-
+    print 'req adj', zoomlevel
 
 
 
