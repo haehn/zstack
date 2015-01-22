@@ -26,6 +26,7 @@ class Section:
     '''
     '''
     for t in self._tiles:
+      # print 'new_tile'
       t._mipmap.create(downsampler)
 
   @staticmethod

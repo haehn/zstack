@@ -39,6 +39,8 @@ class Tile:
     # store in mipmap
     self._mipmap = MipMap(image, self._transforms)
 
+    # print 'image', os.path.join(prefix,self._mipmapLevels["0"]['imageUrl'])
+
 
   @staticmethod
   def fromJSON(json):

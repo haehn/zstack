@@ -17,59 +17,55 @@ class DataGrabber:
 
     downsampler = Powertrain(True)
     downsampler.program = """
-    const sampler_t sampler = CLK_NORMALIZED_COORDS_TRUE | 
-      CLK_FILTER_LINEAR | CLK_ADDRESS_CLAMP_TO_EDGE;
+__kernel void ds(__global const uchar *img_g, const int width, __global uchar *out_g) {
+  int gid = get_global_id(0);
 
-    __kernel void downsample(__read_only image2d_t sourceImage, __write_only image2d_t targetImage)
-    {
+  int col = gid % width;
+  int row = gid / width;
 
-      int w = get_image_width(targetImage);
-      int h = get_image_height(targetImage);
+  int new_row = row/2;
+  int new_col = col/2;
+  int new_width = width/2;
+  int k = new_row*new_width + new_col;
 
-      int outX = get_global_id(0);
-      int outY = get_global_id(1);
-      int2 posOut = {outX, outY};
+  if (row % 2 == 0 && col % 2 == 0) {
 
-      float inX = outX / (float) w;
-      float inY = outY / (float) h;
-      float2 posIn = {inX, inY};
+    uchar c = img_g[gid];
+    uchar r = img_g[gid+1];
+    uchar b = img_g[gid+width];
+    uchar b_r = img_g[gid+width+1];
 
-      float4 pixel = read_imagef(sourceImage, sampler, posIn);
-      write_imagef(targetImage, posOut, pixel);
+    uchar val = (c + r + b + b_r) / 4;
 
-    }
+    //out_g[k] = img_g[gid];
+    out_g[k] = val;
+  }
+}
 
-    __kernel void transform(__read_only image2d_t sourceImage,
-                            const float angle,
-                            const float Tx,
-                            const float Ty,
-                            __write_only image2d_t targetImage)
-    {
+__kernel void transform(__global const uchar *img_g,
+                        const int width,
+                        const float angle,
+                        const float Tx,
+                        const float Ty,
+                        const int out_width,
+                        __global uchar *out_g) {
+  int gid = get_global_id(0);
 
-      int w = get_image_width(targetImage);
-      int h = get_image_height(targetImage);
+  int col = gid % width;
+  int row = gid / width;
 
-      int outX = get_global_id(0);
-      int outY = get_global_id(1);
-      int2 posOut = {outX, outY};
+  // 
+  float c = cos(angle);
+  float s = sin(angle);
 
-      float inX = outX / (float) w;
-      float inY = outY / (float) h;
-      
-      // 
-      float c = cos(angle);
-      float s = sin(angle);
+  // new position
+  int new_col = c * col - s * row + Tx;
+  int new_row = s * col + c * row + Ty;
+  int k = new_row*out_width + new_col;
 
-      // new position
-      float new_col = c * inX - s * inY + Tx;
-      float new_row = s * inX + c * inY + Ty;
-      float2 posIn = {new_col, new_row};
+  out_g[k] = img_g[gid];
 
-
-      float4 pixel = read_imagef(sourceImage, sampler, posIn);
-      write_imagef(targetImage, posOut, pixel);
-
-    }
+}
     """
 
 
@@ -130,6 +126,7 @@ class DataGrabber:
 
     for t in self._sections[id]._tiles:
       pixels = t._mipmap.get(zoomlevel)
+      # print pixels, pixels.shape
       tile_width = pixels.shape[0]
       tile_height = pixels.shape[1]
       transforms = t._transforms
