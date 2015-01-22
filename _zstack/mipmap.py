@@ -53,8 +53,8 @@ class MipMap(object):
         max_x = max(max_x, new_x)
         max_y = max(max_y, new_y)
 
-    tx2 = transform.x - min_x
-    ty2 = transform.y - min_y
+    tx2 = transform.x #- min_x
+    ty2 = transform.y #- min_y
     output_width, output_height = (int(max_x - min_x + 1), int(max_y - min_y + 1))
 
 
@@ -73,8 +73,9 @@ class MipMap(object):
       # print 'created output buffer', out_buffer.nbytes
 
       if l==0:
+        print img_seq.nbytes, width, height, output_width, output_height, out_buffer.nbytes
         downsampler.program.transform(downsampler.queue,
-                                      (width*height,),
+                                      (img_seq.nbytes,),
                                       None,
                                       in_img, 
                                       np.int32(width),
