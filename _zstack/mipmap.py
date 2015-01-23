@@ -2,6 +2,8 @@ import numpy as np
 import pyopencl as cl
 import sys
 
+from rigidmodel2d import RigidModel2D
+
 class MipMap(object):
 
   def __init__(self, image, transforms):
@@ -40,6 +42,7 @@ class MipMap(object):
     in_img = cl.Buffer(downsampler.context, mf.READ_ONLY | mf.USE_HOST_PTR, hostbuf=img_seq)
 
     transform = self._transforms[1]
+    # transform = RigidModel2D("0.24 500 500")
     c = np.cos(transform.r)
     s = np.sin(transform.r)
 
@@ -53,12 +56,19 @@ class MipMap(object):
         max_x = max(max_x, new_x)
         max_y = max(max_y, new_y)
 
-    tx2 = transform.x #- min_x
-    ty2 = transform.y #- min_y
-    output_width, output_height = (int(max_x - min_x + 1), int(max_y - min_y + 1))
+    tx2 = transform.x# - min_x
+    ty2 = transform.y# - min_y
+    output_width, output_height = (int(max_x - min_x), int(max_y - min_y))
+
+    # if output_width % 2 != 0:
+    #   print 'adjusting width'
+    #   output_width += 1
+    # if output_height % 2 != 0:
+    #   print 'adjusting height'
+    #   output_height += 1
 
 
-    last_used_nbytes = output_width*output_height
+    # last_used_nbytes = output_width*output_height
 
 
     for l in range(self._max_level+1):
@@ -68,43 +78,48 @@ class MipMap(object):
       out_buffer = np.zeros(output_width*output_height, dtype=np.uint8)
 
       # out_img = cl.Image(downsampler.context, mf.READ_WRITE, image_format, (out_buffer.shape))
-      out_img = cl.Buffer(downsampler.context, mf.READ_WRITE, out_buffer.nbytes)
+      out_img = cl.Buffer(downsampler.context, mf.READ_WRITE, output_width*output_height)
 
       # print 'created output buffer', out_buffer.nbytes
 
       if l==0:
         print img_seq.nbytes, width, height, output_width, output_height, out_buffer.nbytes
         downsampler.program.transform(downsampler.queue,
-                                      (img_seq.nbytes,),
+                                      (width*height,),
                                       None,
                                       in_img, 
                                       np.int32(width),
+                                      np.int32(height),
                                       np.float32(transform.r),
                                       np.float32(tx2),
                                       np.float32(ty2),
                                       np.int32(output_width),
+                                      np.int32(output_height),
                                       out_img)
       else:
         downsampler.program.ds(downsampler.queue,
-                              (out_buffer.nbytes*4,),
+                              (width*height,),
                               None,
                               in_img,
                               np.int32(width),
+                              np.int32(height),
+                              np.int32(output_width),
+                              np.int32(output_height),
                               out_img)
 
       
-      if l>0 and last_used_nbytes!= (out_buffer.nbytes * 4):
-        print 'last_used_nbytes', last_used_nbytes
-        print 'out_buffer.nbytes', out_buffer.nbytes
-        print 'out_buffer.nbytes*4', out_buffer.nbytes*4
-        print 'width,height', width, height
-        print 'output_width,output_height', output_width, output_height
+      # if l>0 and last_used_nbytes!= (out_buffer.nbytes * 4):
+      #   print 'last_used_nbytes', last_used_nbytes
+      #   print 'out_buffer.nbytes', out_buffer.nbytes
+      #   print 'out_buffer.nbytes*4', out_buffer.nbytes*4
+      #   print 'width,height', width, height
+      #   print 'output_width,output_height', output_width, output_height
 
 
       # cl.enqueue_read_image(downsampler.queue, out_img, (0,0), out_buffer.shape, out_buffer).wait()
       cl.enqueue_copy(downsampler.queue, out_buffer, out_img)
 
-      last_used_nbytes = out_buffer.nbytes
+      # last_used_nbytes = out_buffer.nbytes
       
       # re-create 2d image from output buffer
       out_buffer = out_buffer.reshape(output_width, output_height)
@@ -121,6 +136,10 @@ class MipMap(object):
       height = output_height
       output_width /= 2
       output_height /= 2
+      # if output_width % 2 != 0:
+      #   output_width += 1
+      # if output_height % 2 != 0:
+      #   output_height += 1  
 
     # print self._levels
 

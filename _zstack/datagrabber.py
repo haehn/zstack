@@ -17,16 +17,38 @@ class DataGrabber:
 
     downsampler = Powertrain(True)
     downsampler.program = """
-__kernel void ds(__global const uchar *img_g, const int width, __global uchar *out_g) {
+__kernel void ds(__global const uchar *img_g,
+                 const int width,
+                 const int height,
+                 const int out_width,
+                 const int out_height,                 
+                 __global uchar *out_g) {
   int gid = get_global_id(0);
 
   int col = gid % width;
   int row = gid / width;
 
+  if ((col >= width) || (row >= height)) {
+    return;
+  }  
+
+  
+  if (col < 0) {
+    return;
+  }
+
   int new_row = row/2;
   int new_col = col/2;
-  int new_width = width/2;
-  int k = new_row*new_width + new_col;
+
+  if ((new_col >= out_width) || (new_row >= out_height)) {
+    return;
+  }
+
+  if (new_col < 0) {
+    return;
+  }  
+
+  int k = new_row*out_width + new_col;
 
   if (row % 2 == 0 && col % 2 == 0) {
 
@@ -44,15 +66,25 @@ __kernel void ds(__global const uchar *img_g, const int width, __global uchar *o
 
 __kernel void transform(__global const uchar *img_g,
                         const int width,
+                        const int height,
                         const float angle,
                         const float Tx,
                         const float Ty,
                         const int out_width,
+                        const int out_height,
                         __global uchar *out_g) {
   int gid = get_global_id(0);
 
   int col = gid % width;
   int row = gid / width;
+
+  if ((col >= width) || (row >= height)) {
+    return;
+  }
+
+  if (col < 0) {
+    return;
+  }
 
   // 
   float c = cos(angle);
@@ -61,6 +93,15 @@ __kernel void transform(__global const uchar *img_g,
   // new position
   int new_col = c * col - s * row + Tx;
   int new_row = s * col + c * row + Ty;
+
+  if ((new_col >= out_width) || (new_row >= out_height)) {
+    return;
+  }
+
+  if (new_col < 0) {
+    return;
+  }  
+
   int k = new_row*out_width + new_col;
 
   out_g[k] = img_g[gid];
