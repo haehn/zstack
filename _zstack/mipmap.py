@@ -60,6 +60,8 @@ class MipMap(object):
     ty2 = transform.y# - min_y
     output_width, output_height = (int(max_x - min_x), int(max_y - min_y))
 
+    print transform.r, transform.x, transform.y
+
     # if output_width % 2 != 0:
     #   print 'adjusting width'
     #   output_width += 1
@@ -78,7 +80,7 @@ class MipMap(object):
       out_buffer = np.zeros(output_width*output_height, dtype=np.uint8)
 
       # out_img = cl.Image(downsampler.context, mf.READ_WRITE, image_format, (out_buffer.shape))
-      out_img = cl.Buffer(downsampler.context, mf.READ_WRITE, output_width*output_height)
+      out_img = cl.Buffer(downsampler.context, mf.READ_WRITE, out_buffer.nbytes)
 
       # print 'created output buffer', out_buffer.nbytes
 
@@ -97,6 +99,9 @@ class MipMap(object):
                                       np.int32(output_height),
                                       out_img)
       else:
+        # continue
+        print 'downsampling', width, height, width*height, 'n', output_width, output_height, output_width*output_height
+
         downsampler.program.ds(downsampler.queue,
                               (width*height,),
                               None,
@@ -117,7 +122,7 @@ class MipMap(object):
 
 
       # cl.enqueue_read_image(downsampler.queue, out_img, (0,0), out_buffer.shape, out_buffer).wait()
-      cl.enqueue_copy(downsampler.queue, out_buffer, out_img)
+      cl.enqueue_copy(downsampler.queue, out_buffer, out_img).wait()
 
       # last_used_nbytes = out_buffer.nbytes
       

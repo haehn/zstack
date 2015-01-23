@@ -32,7 +32,7 @@ __kernel void ds(__global const uchar *img_g,
     return;
   }  
 
-  
+
   if (col < 0) {
     return;
   }
@@ -131,6 +131,7 @@ __kernel void transform(__global const uchar *img_g,
 
 
 
+    # sections['W02_Sec001_Montage_montaged.json'] = sections['W02_Sec001_Montage_montaged.json']
 
     # load data 
     for s in sections:
