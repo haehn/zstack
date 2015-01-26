@@ -202,7 +202,9 @@ __kernel void transform(__global const uchar *img_g,
         k += 1
 
       print int(offset_x),int(offset_x)+tile_width, int(offset_y),int(offset_y)+tile_height
-      output[offset_y:offset_y+tile_height,offset_x:offset_x+tile_width] = np.ma.masked_greater(pixels,0,False)
+      mask = np.ma.masked_equal(pixels, 0, False)
+      output[offset_y:offset_y+tile_height,offset_x:offset_x+tile_width] = np.where(mask.mask, output[offset_y:offset_y+tile_height,offset_x:offset_x+tile_width], pixels)
+      # output[offset_y:offset_y+tile_height,offset_x:offset_x+tile_width] = np.ma.masked_greater(pixels,0,False)
       # np.place(output[offset_y:offset_y+tile_height,offset_x:offset_x+tile_width], pixels>0, pixels[pixels>0])
 
     self._cache[zoomlevel] = output
