@@ -58,7 +58,7 @@ class MipMap(object):
 
     tx2 = transform.x# - min_x
     ty2 = transform.y# - min_y
-    output_width, output_height = (int(max_x - min_x), int(max_y - min_y))
+    output_width, output_height = (int(max_x - min_x)+1, int(max_y - min_y)+1)
 
     print transform.r, transform.x, transform.y
 
