@@ -2,6 +2,8 @@ import os
 import glob
 import numpy as np
 import pyopencl as cl
+import cv2
+
 from jsonloader import JSONLoader
 from powertrain import Powertrain
 
@@ -107,6 +109,32 @@ __kernel void transform(__global const uchar *img_g,
   out_g[k] = img_g[gid];
 
 }
+
+__kernel void stitch(__global const uchar *img_g,
+                        const int width,
+                        const int height,
+                        const int offset_x,
+                        const int offset_y,
+                        const int out_width,
+                        const int out_height,
+                        __global uchar *out_g) {
+
+  int gid = get_global_id(0);
+
+  int col = offset_x + gid % width;
+  int row = offset_y + gid / width;
+
+  if ((col >= out_width) || (row >= out_height)) {
+    return;
+  }
+
+  int k = col*out_width + col;
+
+  out_g[k] = img_g[gid];
+
+
+}
+
     """
 
 
@@ -201,11 +229,42 @@ __kernel void transform(__global const uchar *img_g,
         offset_y /= 2
         k += 1
 
-      print int(offset_x),int(offset_x)+tile_width, int(offset_y),int(offset_y)+tile_height
-      mask = np.ma.masked_equal(pixels, 0, False)
-      output[offset_y:offset_y+tile_height,offset_x:offset_x+tile_width] = np.where(mask.mask, output[offset_y:offset_y+tile_height,offset_x:offset_x+tile_width], pixels)
-      # output[offset_y:offset_y+tile_height,offset_x:offset_x+tile_width] = np.ma.masked_greater(pixels,0,False)
+      # OPTION 1
+      # mask = np.ma.masked_equal(pixels, 0, False)
+      # output[offset_y:offset_y+tile_height,offset_x:offset_x+tile_width] = np.where(mask.mask, output[offset_y:offset_y+tile_height,offset_x:offset_x+tile_width], pixels)
+
+      # OPTION 2
       # np.place(output[offset_y:offset_y+tile_height,offset_x:offset_x+tile_width], pixels>0, pixels[pixels>0])
+
+      # OPTION 3
+      # output_subarray = output[offset_y:offset_y+tile_height,offset_x:offset_x+tile_width]
+
+      # mask = pixels != 0
+      # output_subarray[mask] = pixels[mask]
+
+      # OPTION 4
+      # # Create a mask and an inversed mask of the tile we are going to add
+      # ret, mask = cv2.threshold(pixels, 1, 255, cv2.THRESH_BINARY)
+      # mask_inv = cv2.bitwise_not(mask)
+
+      # # Set the area that is going to be changed in the output image
+      # roi = output[
+      #     offset_y:offset_y+tile_height,offset_x:offset_x+tile_width
+      #     ]
+
+      # # Now black-out the area of the new image in the output image
+      # out_bg = cv2.bitwise_and(roi, roi, mask = mask_inv)
+
+      # # Take only the interesting stuff out of the new tile
+      # tile_fg = cv2.bitwise_and(pixels, pixels, mask = mask)
+
+      # # Put logo in ROI and modify the main image
+      # dst = cv2.add(out_bg, tile_fg)
+      # output[
+      #   offset_y:offset_y+tile_height,offset_x:offset_x+tile_width
+      # ] = dst
+
+
 
     self._cache[zoomlevel] = output
     print 'DONE', zoomlevel
