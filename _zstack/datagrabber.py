@@ -110,27 +110,54 @@ __kernel void transform(__global const uchar *img_g,
 
 }
 
-__kernel void stitch(__global const uchar *img_g,
-                        const int width,
-                        const int height,
-                        const int offset_x,
-                        const int offset_y,
+__kernel void stitch(__global uchar *out_g,
                         const int out_width,
                         const int out_height,
-                        __global uchar *out_g) {
+                        const int tile_offset_x,
+                        const int tile_offset_y,
+                        const int tile_width,
+                        const int tile_height,
+                        __global const uchar *tile_g) {
 
+  // id inside output
   int gid = get_global_id(0);
 
-  int col = offset_x + gid % width;
-  int row = offset_y + gid / width;
+  if (gid >= out_width*out_height)
+    return;
 
-  if ((col >= out_width) || (row >= out_height)) {
+  // col + row inside output
+  int col = gid % out_width;
+  int row = gid / out_width;
+
+  // do nothing until we reach the hotspot
+  if (col < tile_offset_x) {
     return;
   }
 
-  int k = col*out_width + col;
+  if (row < tile_offset_y) {
+    return;
+  }
 
-  out_g[k] = img_g[gid];
+  // we are in the hotspot
+  int tile_col = col - tile_offset_x;
+  int tile_row = row - tile_offset_y;
+
+  if (tile_col > tile_width) {
+    return;
+  }
+
+  if (tile_row > tile_height) {
+    return;
+  }
+
+
+  int k = tile_row*tile_width + tile_col;
+
+  if (tile_g[k] == 0) {
+    return;
+  }
+
+  out_g[gid] = tile_g[k];
 
 
 }
@@ -175,6 +202,8 @@ __kernel void stitch(__global const uchar *img_g,
     # tile = self.getSection(0,5)
     # print tile.shape
 
+    self._downsampler = downsampler
+
 
   def getSection(self, id, zoomlevel):
     '''
@@ -212,8 +241,17 @@ __kernel void stitch(__global const uchar *img_g,
       width = max(width, tile_width+offset_x)
       height = max(height, tile_height+offset_y)
 
+    width = int(width)
+    height = int(height)
+
     # this is out stitched tile array
-    output = np.zeros((height, width), dtype=np.uint8)
+    output = np.zeros((height*width), dtype=np.uint8)
+
+    # create output buffer
+    downsampler = self._downsampler
+    mf = cl.mem_flags
+    out_img = cl.Buffer(downsampler.context, mf.READ_WRITE| mf.USE_HOST_PTR, hostbuf=output)
+
 
 
     for t in self._sections[id]._tiles:
@@ -228,6 +266,26 @@ __kernel void stitch(__global const uchar *img_g,
         offset_x /= 2
         offset_y /= 2
         k += 1
+
+      # create CL buffer
+      pixels_seq = pixels.ravel()
+      # print pixels_seq.shape, pixels_seq.dtype
+      in_img = cl.Buffer(downsampler.context, mf.READ_ONLY | mf.USE_HOST_PTR, hostbuf=pixels_seq)
+      # print in_img
+      print 'GS',width*height
+      downsampler.program.stitch(downsampler.queue,
+                                 (width*height,),
+                                 None,
+                                 out_img,
+                                 np.int32(width),
+                                 np.int32(height),
+                                 np.int32(offset_x),
+                                 np.int32(offset_y),                                 
+                                 np.int32(tile_width),
+                                 np.int32(tile_height), in_img)
+
+      # sys.exit()
+
 
       # OPTION 1
       # mask = np.ma.masked_equal(pixels, 0, False)
@@ -264,8 +322,11 @@ __kernel void stitch(__global const uchar *img_g,
       #   offset_y:offset_y+tile_height,offset_x:offset_x+tile_width
       # ] = dst
 
+    cl.enqueue_copy(downsampler.queue, output, out_img).wait()
 
+    # print output.shape, width, height, output
 
+    output = output.reshape(height, width)
     self._cache[zoomlevel] = output
     print 'DONE', zoomlevel
 
