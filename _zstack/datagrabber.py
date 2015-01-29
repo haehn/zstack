@@ -110,6 +110,43 @@ __kernel void transform(__global const uchar *img_g,
 
 }
 
+__kernel void stitch2(__global uchar *out_g,
+                        const int out_width,
+                        const int out_height,  
+                        __global const uchar *tile_g) {
+  int gid = get_global_id(0);
+
+  if (gid >= out_width*out_height)
+    return;
+
+  // col + row inside output
+  int col = gid % out_width;
+  int row = gid / out_width;
+
+  if (tile_g[gid] == 0) {
+
+    // check for boundary pixels (thin black lines)
+    //int k_top = (row+1)*out_width + col;
+    //int k_left = row*out_width + col+1;
+
+    //if (tile_g[k_top] != 0) {
+    //  out_g[gid] = tile_g[k_top];
+    //  return;
+    //}
+
+    //if (tile_g[k_left] != 0) {
+    //  out_g[gid] = tile_g[k_left];
+    //  return;
+    //}
+
+    return;
+  }
+
+  out_g[gid] = tile_g[gid];
+
+
+}
+
 __kernel void stitch(__global uchar *out_g,
                         const int out_width,
                         const int out_height,
@@ -245,12 +282,12 @@ __kernel void stitch(__global uchar *out_g,
     height = int(height)
 
     # this is out stitched tile array
-    output = np.zeros((height*width), dtype=np.uint8)
+    output = np.zeros((height,width), dtype=np.uint8)
 
     # create output buffer
     downsampler = self._downsampler
     mf = cl.mem_flags
-    out_img = cl.Buffer(downsampler.context, mf.READ_WRITE| mf.USE_HOST_PTR, hostbuf=output)
+    
 
 
 
@@ -270,19 +307,21 @@ __kernel void stitch(__global uchar *out_g,
       # create CL buffer
       pixels_seq = pixels.ravel()
       # print pixels_seq.shape, pixels_seq.dtype
+
+      output_subarray = output[offset_y:offset_y+tile_height,offset_x:offset_x+tile_width]
+      output_subarray = output_subarray.ravel()
+
+      out_img = cl.Buffer(downsampler.context, mf.WRITE_ONLY | mf.USE_HOST_PTR, hostbuf=output_subarray)
       in_img = cl.Buffer(downsampler.context, mf.READ_ONLY | mf.USE_HOST_PTR, hostbuf=pixels_seq)
       # print in_img
-      print 'GS',width*height
-      downsampler.program.stitch(downsampler.queue,
-                                 (width*height,),
+      # print 'GS',width*height
+      downsampler.program.stitch2(downsampler.queue,
+                                 (tile_width*tile_height,),
                                  None,
                                  out_img,
-                                 np.int32(width),
-                                 np.int32(height),
-                                 np.int32(offset_x),
-                                 np.int32(offset_y),                                 
                                  np.int32(tile_width),
-                                 np.int32(tile_height), in_img)
+                                 np.int32(tile_height),
+                                 in_img)
 
       # sys.exit()
 
@@ -322,11 +361,13 @@ __kernel void stitch(__global uchar *out_g,
       #   offset_y:offset_y+tile_height,offset_x:offset_x+tile_width
       # ] = dst
 
-    cl.enqueue_copy(downsampler.queue, output, out_img).wait()
+      cl.enqueue_copy(downsampler.queue, output_subarray, out_img)
+
+      output[offset_y:offset_y+tile_height,offset_x:offset_x+tile_width] = output_subarray.reshape(tile_height, tile_width)
 
     # print output.shape, width, height, output
 
-    output = output.reshape(height, width)
+    # output = output.reshape(height, width)
     self._cache[zoomlevel] = output
     print 'DONE', zoomlevel
 
