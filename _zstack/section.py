@@ -26,6 +26,7 @@ class Section:
     '''
     '''
     for t in self._tiles:
+      # print 'new_tile'
       t._mipmap.create(downsampler)
 
   @staticmethod
@@ -35,6 +36,8 @@ class Section:
 
     new_section = Section()
     loaded_tiles = []
+
+    # json = [json[1],json[0],json[2],json[2],json[2],json[2]]
 
     for t in json:
       new_tile = Tile.fromJSON(t)

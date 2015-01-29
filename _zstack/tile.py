@@ -37,7 +37,9 @@ class Tile:
     image = cv2.imread(os.path.join(prefix,self._mipmapLevels["0"]['imageUrl']), cv2.CV_LOAD_IMAGE_GRAYSCALE)
 
     # store in mipmap
-    self._mipmap = MipMap(image)
+    self._mipmap = MipMap(image, self._transforms)
+
+    print 'image', os.path.join(prefix,self._mipmapLevels["0"]['imageUrl'])
 
 
   @staticmethod
