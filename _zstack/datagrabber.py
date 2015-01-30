@@ -3,6 +3,7 @@ import glob
 import numpy as np
 import pyopencl as cl
 import cv2
+import sys
 
 from jsonloader import JSONLoader
 from powertrain import Powertrain
@@ -253,6 +254,8 @@ __kernel void stitch(__global uchar *out_g,
 
     print 'CACHING', zoomlevel
 
+    divisor = 2**zoomlevel
+
     width = 0
     height = 0
 
@@ -260,26 +263,35 @@ __kernel void stitch(__global uchar *out_g,
     # note: running twice through all tiles is faster than resizing the output array
     #
 
+    minX = sys.maxint
+    minY = sys.maxint
+
     for t in self._sections[id]._tiles:
       pixels = t._mipmap.get(zoomlevel)
       # print pixels, pixels.shape
       tile_width = pixels.shape[0]
       tile_height = pixels.shape[1]
       transforms = t._transforms
-      offset_x, offset_y = (transforms[0].x, transforms[0].y)
-      # print 'offsets', offset_x, offset_y
-      k = 0
-      while k < zoomlevel:
-        offset_x /= 2
-        offset_y /= 2
-        k += 1    
+      offset_x0, offset_y0 = (transforms[0].x, transforms[0].y)
+      offset_x1, offset_y1 = (transforms[1].x, transforms[1].y)
 
-      # print 'adj. offsets', offset_x
+      offset_x = (offset_x0 + offset_x1) / divisor
+      offset_y = (offset_y0 + offset_y1) / divisor
+
+      minX = min(minX, offset_x)
+      minY = min(minY, offset_y)
+
       width = max(width, tile_width+offset_x)
       height = max(height, tile_height+offset_y)
 
-    width = int(width)
-    height = int(height)
+
+
+
+    width = int(width-minX) + 1
+    height = int(height-minY) + 1
+
+    # print minX, minY
+    # sys.exit()
 
     # this is out stitched tile array
     output = np.zeros((height,width), dtype=np.uint8)
@@ -296,20 +308,60 @@ __kernel void stitch(__global uchar *out_g,
       tile_width = pixels.shape[0]
       tile_height = pixels.shape[1]
       transforms = t._transforms
-      offset_x, offset_y = (transforms[0].x, transforms[0].y)
-      # print 'offsets', offset_x, offset_y
-      k = 0
-      while k < zoomlevel:
-        offset_x /= 2
-        offset_y /= 2
-        k += 1
+      offset_x0, offset_y0 = (transforms[0].x, transforms[0].y)
+      offset_x1, offset_y1 = (transforms[1].x, transforms[1].y)
 
-      # create CL buffer
+      offset_x = (offset_x0 + offset_x1) / divisor
+      offset_y = (offset_y0 + offset_y1) / divisor
+
+      offset_x = int(offset_x-minX) + 1
+      offset_y = int(offset_y-minY) + 1
+
+      # offset_x, offset_y = (transforms[0].x, transforms[0].y)
+      # offset_x1, offset_y1 = (transforms[1].x, transforms[1].y)
+      # # print 'offsets', offset_x, offset_y
+      # k = 0
+      # while k < zoomlevel:
+      #   offset_x /= 2
+      #   offset_y /= 2
+      #   offset_x1 /= 2
+      #   offset_y1 /= 2
+      #   k += 1
+
+      # print '='*80
+
+      # print 'minX,Y', minX, minY
+
+      # print 'o1',offset_x, offset_y
+
+      # offset_x += offset_x1
+      # offset_y += offset_y1
+
+      # print 'o1 + o2',offset_x, offset_y
+
+      # offset_x -= minX
+      # offset_y -= minY
+
+      # print '(o1 + o2) - minX,Y',offset_x, offset_y
+
+      # # offset_x = max(0, offset_x)
+      # # offset_y = max(0, offset_y)
+
+      # offset_x = int(offset_x)
+      # offset_y = int(offset_y)
+
+      # # create CL buffer
       pixels_seq = pixels.ravel()
       # print pixels_seq.shape, pixels_seq.dtype
 
+      # print 'offsets floored',offset_x, offset_y
+      # print 'output size', width, height
+      # print 'tile size',tile_width, tile_height
+
       output_subarray = output[offset_y:offset_y+tile_height,offset_x:offset_x+tile_width]
+      # print 'output_subarray shape', output_subarray.shape
       output_subarray = output_subarray.ravel()
+      
 
       out_img = cl.Buffer(downsampler.context, mf.WRITE_ONLY | mf.USE_HOST_PTR, hostbuf=output_subarray)
       in_img = cl.Buffer(downsampler.context, mf.READ_ONLY | mf.USE_HOST_PTR, hostbuf=pixels_seq)
@@ -363,9 +415,13 @@ __kernel void stitch(__global uchar *out_g,
 
       cl.enqueue_copy(downsampler.queue, output_subarray, out_img)
 
+      # print 'offsets', offset_x, offset_y, offset_x1, offset_y1
+      # print 'w/h', tile_width, tile_height
+      # print 'output_subarray', output_subarray.shape
+
       output[offset_y:offset_y+tile_height,offset_x:offset_x+tile_width] = output_subarray.reshape(tile_height, tile_width)
 
-    # print output.shape, width, height, output
+    print output.shape, width, height
 
     # output = output.reshape(height, width)
     self._cache[zoomlevel] = output

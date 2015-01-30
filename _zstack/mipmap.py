@@ -56,9 +56,10 @@ class MipMap(object):
         max_x = max(max_x, new_x)
         max_y = max(max_y, new_y)
 
-    tx2 = transform.x# - min_x
-    ty2 = transform.y# - min_y
+    tx2 = transform.x - min_x
+    ty2 = transform.y - min_y
     output_width, output_height = (int(max_x - min_x)+1, int(max_y - min_y)+1)
+
 
     print transform.r, transform.x, transform.y
 
@@ -85,7 +86,7 @@ class MipMap(object):
       # print 'created output buffer', out_buffer.nbytes
 
       if l==0:
-        print img_seq.nbytes, width, height, output_width, output_height, out_buffer.nbytes
+        # print img_seq.nbytes, width, height, output_width, output_height, out_buffer.nbytes
         downsampler.program.transform(downsampler.queue,
                                       (width*height,),
                                       None,
@@ -100,7 +101,7 @@ class MipMap(object):
                                       out_img)
       else:
         # continue
-        print 'downsampling', width, height, width*height, 'n', output_width, output_height, output_width*output_height
+        # print 'downsampling', width, height, width*height, 'n', output_width, output_height, output_width*output_height
 
         downsampler.program.ds(downsampler.queue,
                               (width*height,),
@@ -131,10 +132,10 @@ class MipMap(object):
       self._levels.append(out_buffer)
       
 
-      if l>3:
-        print 'writing'
-        import cv2
-        cv2.imwrite('/tmp/testnew'+str(l)+'.jpg', out_buffer)
+      # if l>3:
+      #   print 'writing'
+      #   import cv2
+      #   cv2.imwrite('/tmp/testnew'+str(l)+'.jpg', out_buffer)
 
       in_img = out_img
       width = output_width
