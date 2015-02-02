@@ -3,8 +3,14 @@ import cv2
 import os
 import sys
 import socket
+import time
 import tornado
 import tornado.websocket
+
+
+from tornado.concurrent import Future
+from tornado import gen
+from tornado.options import define, options, parse_command_line
 
 import _zstack
 
@@ -16,10 +22,14 @@ class Handler(tornado.web.RequestHandler):
   def initialize(self, logic):
     self.__logic = logic
 
+  @tornado.web.asynchronous
+  @gen.coroutine
   def get(self, uri):
     '''
     '''
+    # response = yield self.__logic.handle(self)
     self.__logic.handle(self)
+
 
   def post(self, uri):
     '''
@@ -61,6 +71,7 @@ class ServerLogic:
 
     tornado.ioloop.IOLoop.instance().start()
 
+  @gen.coroutine
   def handle( self, handler ):
     '''
     '''
@@ -69,6 +80,7 @@ class ServerLogic:
     #
     #
     #
+    print 'test'
 
     requested_tile = handler.request.uri.split('/')[-1].split('-')
     zoomlevel = int(requested_tile[0])
@@ -90,7 +102,9 @@ class ServerLogic:
 
 
 
-
+    while 1:
+      loop = IOLoop.instance()
+      yield gen.Task(loop.add_timeout, time.time() + 5)
 
 
     tile = self._data_grabber.getSection("W02_Sec001_Montage_montaged.json",zoomlevel)
