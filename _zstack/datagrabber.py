@@ -212,6 +212,9 @@ __kernel void stitch(__global uchar *out_g,
 
     for f in json_files:
 
+
+
+
       section = os.path.basename(f)
 
       loader = JSONLoader(f)
@@ -425,6 +428,10 @@ __kernel void stitch(__global uchar *out_g,
 
     # output = output.reshape(height, width)
     self._cache[zoomlevel] = output
+    print 'D'
+    cv2.imwrite('/Volumes/RAMDisk/'+zoomlevel+'.jpg', output)
+    print 'STORED'    
     print 'DONE', zoomlevel
+
 
     return output
