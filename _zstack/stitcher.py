@@ -61,6 +61,8 @@ class Stitcher(Worker):
     out_width = view._bbox[1]
     out_height = view._bbox[3]
 
+    # TODO we do not really need to reshape
+    # we can figure out the indices in the raveled array
     reshaped_imagedata = view._imagedata.reshape(out_height, out_width)
 
     for t in view._tiles:
