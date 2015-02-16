@@ -33,6 +33,9 @@ class Manager(object):
 
     self._client_tile_size = 512
 
+    self._current_z = -1
+    self._current_zoomlevel = -1
+
   def start(self):
     '''
     '''
@@ -53,12 +56,16 @@ class Manager(object):
     #
     # add the first sections to the viewing queue
     #
-    for z in range(2):
-      self._views[z] = [None]*len(self._zoomlevels)
-      for l in self._zoomlevels[:1:-1]: # but don't queue the two largest zoomlevels yet
-        view = View(self._sections[z]._tiles, l)
-        self._views[z][l] = view
-        self._viewing_queue.append(view)
+    # for z in range(2):
+    self._views[0] = [None]*len(self._zoomlevels)
+    for l in self._zoomlevels[:1:-1]: # but don't queue the two largest zoomlevels yet
+      view = View(self._sections[0]._tiles, l)
+      self._views[0][l] = view
+      self._viewing_queue.append(view)
+
+    # we start here
+    self._current_z = 0
+    self._current_zoomlevel = self._zoomlevels[-1]
 
 
 
@@ -94,11 +101,82 @@ class Manager(object):
 
     return json.dumps(sections)
 
+  def get_next(self,x,y,z,zoomlevel):
+    '''
+    '''
+
+    z = z+1
+
+    if z in self._views:
+      if self._views[z][zoomlevel]:
+        return
+
+    #
+    # calculate tiles we really need for the next section
+    #
+    next_section = self._sections[z]
+
+    if next_section:
+      multiplicator = 2**zoomlevel
+
+      # convert x,y from client coordinates to full resolution coordinates
+      x_0 = x*self._client_tile_size*multiplicator
+      y_0 = y*self._client_tile_size*multiplicator
+
+      # check in which tile x_0 and y_0 are
+      tiles_required = []
+      for i,t in enumerate(self._sections[z]._tiles):
+
+        # we need to incorporate the transforms here
+        offset_x = 0
+        offset_y = 0
+
+        for transform in t._transforms:
+
+          offset_x += transform.x
+          offset_y += transform.y      
+
+        # print 'top left', offset_x, offset_y
+        # print 'bottom right', offset_x+t._bbox[1], offset_y+t._bbox[3]
+
+        if x_0 >= offset_x and y_0 >= offset_y:
+          if x_0 <= offset_x+t._bbox[1] and y_0 <= offset_y+t._bbox[3]:
+
+            # print 'Tile', i
+            tiles_required.append(t)
+
+
+      # create view for the next section
+      view = View(tiles_required, zoomlevel)
+
+      if not z in self._views:
+        self._views[z] = [None]*len(self._zoomlevels)
+
+
+      self._views[z][zoomlevel] = view
+      self._viewing_queue.append(view)
+
+      print 'Added future view'
 
   def get(self,x,y,z,zoomlevel):
     '''
     Grab data using the client tile format.
     '''
+
+    if (z != self._current_z):
+      # we are navigating from slice to slice
+      print 'navigating'
+
+    if (zoomlevel != self._current_zoomlevel):
+      # we are changing the zoom
+      print 'zooming'
+      # remove all views in queue
+      self._viewing_queue = []
+      self.get_next(x,y,z,zoomlevel)
+
+    self._current_z = z
+    self._current_zoomlevel = zoomlevel
+
     # check if we have data for this tile
     if not z in self._views:
       self._views[z] = [None]*len(self._zoomlevels)
@@ -132,6 +210,7 @@ class Manager(object):
     '''
     Starts loading the next section.
     '''
+    # return
     # do nothing while workers are not available
     if self._active_workers.full():
       return
