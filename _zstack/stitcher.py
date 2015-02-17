@@ -81,8 +81,13 @@ class Stitcher(Worker):
       offset_x /= divisor
       offset_y /= divisor
 
-      offset_x = int(offset_x-minX) + 1
-      offset_y = int(offset_y-minY) + 1
+      # offset_x = int(offset_x-minX) + 1
+      # offset_y = int(offset_y-minY) + 1
+
+
+      offset_x = offset_x-minX
+      offset_y = offset_y-minY
+
 
       # print 'placing tile', t, 'at', offset_x, offset_y
 
@@ -123,6 +128,8 @@ class Stitcher(Worker):
                               in_img)
 
       cl.enqueue_copy(stitcher.queue, output_subarray, out_img).wait()
+
+      print 'out', output_subarray.nbytes, tile_height, tile_width
 
       reshaped_imagedata[offset_y:offset_y+tile_height,offset_x:offset_x+tile_width] = output_subarray.reshape(tile_height, tile_width)
 

@@ -58,7 +58,8 @@ class Manager(object):
     #
     # for z in range(2):
     self._views[0] = [None]*len(self._zoomlevels)
-    for l in self._zoomlevels[:1:-1]: # but don't queue the two largest zoomlevels yet
+    # for l in self._zoomlevels[:1:-1]: # but don't queue the two largest zoomlevels yet
+    for l in self._zoomlevels[::-1]:
       view = View(self._sections[0]._tiles, l)
       self._views[0][l] = view
       self._viewing_queue.append(view)
@@ -101,15 +102,9 @@ class Manager(object):
 
     return json.dumps(sections)
 
-  def get_next(self,x,y,z,zoomlevel):
+  def calc_tiles(self,x,y,z,zoomlevel):
     '''
     '''
-
-    z = z+1
-
-    if z in self._views:
-      if self._views[z][zoomlevel]:
-        return
 
     #
     # calculate tiles we really need for the next section
@@ -146,17 +141,19 @@ class Manager(object):
             tiles_required.append(t)
 
 
-      # create view for the next section
-      view = View(tiles_required, zoomlevel)
+      # # create view for the next section
+      # view = View(tiles_required, zoomlevel)
 
-      if not z in self._views:
-        self._views[z] = [None]*len(self._zoomlevels)
+      # if not z in self._views:
+      #   self._views[z] = [None]*len(self._zoomlevels)
 
 
-      self._views[z][zoomlevel] = view
-      self._viewing_queue.append(view)
+      # self._views[z][zoomlevel] = view
+      # self._viewing_queue.append(view)
 
-      print 'Added future view'
+      # print 'Added future view', tiles_required
+
+      return tiles_required
 
   def get(self,x,y,z,zoomlevel):
     '''
@@ -171,8 +168,28 @@ class Manager(object):
       # we are changing the zoom
       print 'zooming'
       # remove all views in queue
-      self._viewing_queue = []
-      self.get_next(x,y,z,zoomlevel)
+      # self._viewing_queue = []
+      # self.get_next(x,y,z,zoomlevel)
+
+    
+    # if zoomlevel == 0:
+    #   future_tiles = self.get_next(x,y,z,zoomlevel)  
+    #   # print 'We are ready to looooooad', x, y, z, zoomlevel
+    #   # print future_tiles
+    #   # view = View()
+    #   z_new = z + 1
+    #   if not z_new in self._views:
+    #     self._views[z_new] = [None]*len(self._zoomlevels)
+
+    #   view = self._views[z_new][zoomlevel]
+
+    #   if not view:
+    #     view = View(future_tiles, zoomlevel)
+    #     self._views[z_new][zoomlevel] = view
+    #     self._viewing_queue.append(view)
+    #     print 'Added future view'
+
+
 
     self._current_z = z
     self._current_zoomlevel = zoomlevel
@@ -184,11 +201,20 @@ class Manager(object):
     view = self._views[z][zoomlevel]
 
     if not view:
-      print 'Did not find view for layer', z, 'and zoomlevel', zoomlevel
+      # if we have a higher zoomlevel, exit
+      # if self._views[z][0]:
+      #   view = self._views[z][0]
+      # else:
+      #   print 'Did not find view for layer', z, 'and zoomlevel', zoomlevel
       # we still need to load this zoomlevel
-      view = View(self._sections[z]._tiles, zoomlevel)
+      # view = View(self._sections[z]._tiles, zoomlevel)
+      view = View(self.calc_tiles(x,y,z,zoomlevel), zoomlevel)
       self._views[z][zoomlevel] = view
       self._viewing_queue.append(view) # add it to the viewing queue
+
+      # view = View(self.get_next(x,y,z,zoomlevel), zoomlevel)      
+      # self._views[z+1][zoomlevel] = view
+      # self._viewing_queue.append(view)
       return np.empty(0) # and jump out
 
     # here we definitely have a view for this section with the right zoomlevel
@@ -211,6 +237,7 @@ class Manager(object):
     Starts loading the next section.
     '''
     # return
+
     # do nothing while workers are not available
     if self._active_workers.full():
       return
