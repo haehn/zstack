@@ -129,7 +129,7 @@ class Stitcher(Worker):
 
       cl.enqueue_copy(stitcher.queue, output_subarray, out_img).wait()
 
-      print 'out', output_subarray.nbytes, tile_height, tile_width
+      # print 'out', output_subarray.nbytes, tile_height, tile_width
 
       reshaped_imagedata[offset_y:offset_y+tile_height,offset_x:offset_x+tile_width] = output_subarray.reshape(tile_height, tile_width)
 

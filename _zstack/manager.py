@@ -34,7 +34,9 @@ class Manager(object):
     self._client_tile_size = 512
 
     self._current_z = -1
+    self._n = 1
     self._current_zoomlevel = -1
+    self._current_client_tile = [None, None, None, None]
 
   def start(self):
     '''
@@ -171,6 +173,8 @@ class Manager(object):
       # self._viewing_queue = []
       # self.get_next(x,y,z,zoomlevel)
 
+
+
     
     # if zoomlevel == 0:
     #   future_tiles = self.get_next(x,y,z,zoomlevel)  
@@ -190,7 +194,7 @@ class Manager(object):
     #     print 'Added future view'
 
 
-
+    self._current_client_tile = [x,y,z,zoomlevel]
     self._current_z = z
     self._current_zoomlevel = zoomlevel
 
@@ -208,9 +212,21 @@ class Manager(object):
       #   print 'Did not find view for layer', z, 'and zoomlevel', zoomlevel
       # we still need to load this zoomlevel
       # view = View(self._sections[z]._tiles, zoomlevel)
-      view = View(self.calc_tiles(x,y,z,zoomlevel), zoomlevel)
+      required_tiles = self.calc_tiles(x,y,z,zoomlevel)
+      view = View(required_tiles, zoomlevel)
       self._views[z][zoomlevel] = view
       self._viewing_queue.append(view) # add it to the viewing queue
+
+      # if len(required_tiles) == 1:
+      #   # this view only requires one tile one disk
+      #   # for i in range(5):
+      #   z += 1
+      #   tile = self.calc_tiles(x,y,z,zoomlevel)[0]
+      #   tile._status.loading()
+      #   self._loading_queue.append(tile)      
+          # view = View(required_tiles, zoomlevel)
+          # self._views[z][zoomlevel] = view
+          # self._viewing_queue.append(view) # add it to the viewing queue        
 
       # view = View(self.get_next(x,y,z,zoomlevel), zoomlevel)      
       # self._views[z+1][zoomlevel] = view
@@ -320,4 +336,19 @@ class Manager(object):
       worker.start()
       return # jump out
 
+    #
+    # we basically do no computations right now
+    # start loading data in advance
+    last_client_tile = self._current_client_tile
+    if last_client_tile[0]:
+      n = self._n
+      if abs(last_client_tile[2]-n) < 3:
+        future_tiles = self.calc_tiles(last_client_tile[0], last_client_tile[1], last_client_tile[2]+n, last_client_tile[3])
+        if len(future_tiles) == 1:
+          print 'Loading 1 future tile for z =',n
+          tile = future_tiles[0]
+          if tile._status.isVirgin():
+            tile._status.loading()
+            self._loading_queue.append(tile)
+            self._n += 1
 
