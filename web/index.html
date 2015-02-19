@@ -15,19 +15,30 @@
           content = JSON.parse(r.responseText);
           
           for (var i=0; i<content.length; i++) {
-
+            // content[i].minLevel = 1
             content[i].getTileUrl = function( level, x, y ) {
                                       // in openseadragon:
                                       // 0: smallest
                                       // for us, 0 is the largest
                                       level = this.maxLevel - level;
 
-                                      return "/data/" + level + "-" + x + "-" + y + "-" + this.layer;
+                                      // grab the image roi
+                                      var viewport_top_left = new OpenSeadragon.Point(0,0);
+                                      var viewport_bottom_right = new OpenSeadragon.Point(window.document.body.clientWidth, window.document.body.clientHeight);
+                                      var image_top_left = openseadragon.viewport.windowToImageCoordinates(viewport_top_left);
+                                      var image_bottom_right = openseadragon.viewport.windowToImageCoordinates(viewport_bottom_right);
+
+                                      var image_top_left_x = Math.floor(Math.max(0, image_top_left.x));
+                                      var image_top_left_y = Math.floor(Math.max(0, image_top_left.y));
+                                      var image_bottom_right_x = Math.floor(Math.min(this.width, image_bottom_right.x));
+                                      var image_bottom_right_y = Math.floor(Math.min(this.height, image_bottom_right.y));
+
+                                      return "/data/" + level + "-" + x + "-" + y + "-" + this.layer + '-'+image_top_left_x+'-'+image_top_left_y+'-'+image_bottom_right_x+'-'+image_bottom_right_y;
                                     }
 
           }
 
-          OpenSeadragon({
+          openseadragon = OpenSeadragon({
             id:            "body",
             prefixUrl:     "images/",
             navigatorSizeRatio: 0.25,

@@ -33,6 +33,7 @@ class Manager(object):
 
     self._client_tile_size = 512
 
+    self._current_roi = [-1, -1, -1, -1]
     self._current_z = -1
     self._n = 1
     self._current_zoomlevel = -1
@@ -157,24 +158,91 @@ class Manager(object):
 
       return tiles_required
 
-  def get(self,x,y,z,zoomlevel):
+  def image_roi_to_tiles(self,z,image_roi):
+    '''
+    '''
+
+    i_top_left = (image_roi[0], image_roi[1])
+    i_bottom_right = (image_roi[2], image_roi[3])
+
+    print i_top_left, i_bottom_right
+
+    # check in which tile x_0 and y_0 are
+    tiles_required = []
+    for i,t in enumerate(self._sections[z]._tiles):
+
+      # we need to incorporate the transforms here
+      offset_x = 0
+      offset_y = 0
+
+      for transform in t._transforms:
+
+        offset_x += transform.x
+        offset_y += transform.y      
+
+      # print 'top left', offset_x, offset_y
+      # print 'bottom right', offset_x+t._bbox[1], offset_y+t._bbox[3]
+
+      roi_part_of_tile = False
+
+      tile_top_left = [offset_x, offset_y]
+      tile_bottom_right = [offset_x+t._bbox[1], offset_y+t._bbox[3]]
+
+
+      # roi includes top left of tile
+      if (tile_top_left[0] >= i_top_left[0] and tile_top_left[1] >= i_top_left[1]):
+        if (tile_top_left[0] <= i_bottom_right[0] and tile_top_left[1] <= i_bottom_right[1]):
+          roi_part_of_tile = True
+
+      # roi includes bottom right of tile
+      if (tile_bottom_right[0] >= i_top_left[0] and tile_bottom_right[1] >= i_top_left[1]):
+        if (tile_bottom_right[0] <= i_bottom_right[0] and tile_bottom_right[1] <= i_bottom_right[1]):
+          roi_part_of_tile = True
+
+      # now also check if the tile includes parts of the roi
+      if (tile_top_left[0] <= i_top_left[0] and tile_top_left[1] <= i_top_left[1]):
+        if (tile_bottom_right[0] >= i_top_left[0] and tile_bottom_right[1] >= i_top_left[1]):
+          # top left corner of roi is inside this tile
+          roi_part_of_tile = True
+
+      if (tile_top_left[0] <= i_bottom_right[0] and tile_top_left[1] <= i_bottom_right[1]):
+        if (tile_bottom_right[0] >= i_bottom_right[0] and tile_bottom_right[1] >= i_bottom_right[1]):
+          # bottom right corner of roi is inside this tile
+          roi_part_of_tile = True
+
+
+      if roi_part_of_tile:
+        tiles_required.append(t)
+
+    return tiles_required
+
+
+
+  def get(self,x,y,z,zoomlevel,image_roi):
     '''
     Grab data using the client tile format.
     '''
 
-    if (z != self._current_z):
+    # if (z != self._current_z):
       # we are navigating from slice to slice
-      print 'navigating'
+      # print 'navigating'
 
-    if (zoomlevel != self._current_zoomlevel):
+    # if (zoomlevel != self._current_zoomlevel):
       # we are changing the zoom
-      print 'zooming'
+      # print 'zooming'
       # remove all views in queue
       # self._viewing_queue = []
       # self.get_next(x,y,z,zoomlevel)
 
+    if (self._current_roi[0] == -1):
+      # we have a new roi
+      print 'NEW',self.image_roi_to_tiles(z, image_roi)
+      self._current_roi = image_roi
 
-
+    if self._current_roi[0] != image_roi[0] or self._current_roi[1] != image_roi[1] or self._current_roi[2] != image_roi[2] or self._current_roi[3] != image_roi[3]:
+      # the roi changed
+      print self.image_roi_to_tiles(z, image_roi)
+      self._current_roi = image_roi
     
     # if zoomlevel == 0:
     #   future_tiles = self.get_next(x,y,z,zoomlevel)  
@@ -211,9 +279,10 @@ class Manager(object):
       # else:
       #   print 'Did not find view for layer', z, 'and zoomlevel', zoomlevel
       # we still need to load this zoomlevel
-      # view = View(self._sections[z]._tiles, zoomlevel)
-      required_tiles = self.calc_tiles(x,y,z,zoomlevel)
-      view = View(required_tiles, zoomlevel)
+      view = View(self._sections[z]._tiles, zoomlevel)
+      # required_tiles = self.calc_tiles(x,y,z,zoomlevel)
+
+      # view = View(required_tiles, zoomlevel)
       self._views[z][zoomlevel] = view
       self._viewing_queue.append(view) # add it to the viewing queue
 
@@ -274,12 +343,13 @@ class Manager(object):
         allLoaded = True
 
         for tile in view._tiles:
+          # print tile
           if tile._status.isVirgin():
             # we need to load this tile
             tile._status.loading()
             self._loading_queue.append(tile)
             allLoaded = False
-            print 'We need tile', tile
+            # print 'We need tile', tile
           elif tile._status.isLoading():
             # the tile is still loading
             allLoaded = False
@@ -292,7 +362,7 @@ class Manager(object):
           #
           self._viewing_queue.remove(view)
           view._status.loading()
-          print 'Stitching', view
+          # print 'Stitching', view
 
           # now it is time to calculate the bounding box for this view
           bbox = View.calculateBB(view._tiles, view._zoomlevel)
@@ -308,6 +378,7 @@ class Manager(object):
           args = (self, view)
           worker = mp.Process(target=Stitcher.run, args=args)
           self._active_workers.put(1) # increase worker counter
+          print 'starting stitcher', view
           worker.start()
 
 
@@ -333,22 +404,33 @@ class Manager(object):
       args = (self, tile)
       worker = mp.Process(target=Loader.run, args=args)
       self._active_workers.put(1) # increase worker counter
+      print 'starting loader', tile
       worker.start()
       return # jump out
 
     #
     # we basically do no computations right now
     # start loading data in advance
-    last_client_tile = self._current_client_tile
-    if last_client_tile[0]:
-      n = self._n
-      if abs(last_client_tile[2]-n) < 3:
-        future_tiles = self.calc_tiles(last_client_tile[0], last_client_tile[1], last_client_tile[2]+n, last_client_tile[3])
-        if len(future_tiles) == 1:
-          print 'Loading 1 future tile for z =',n
-          tile = future_tiles[0]
-          if tile._status.isVirgin():
-            tile._status.loading()
-            self._loading_queue.append(tile)
-            self._n += 1
+    # last_client_tile = self._current_client_tile
+    # if last_client_tile[0]:
+    #   n = self._n
+    #   if abs(last_client_tile[2]-n) < 3:
+    #     future_tiles = self.calc_tiles(last_client_tile[0], last_client_tile[1], n, last_client_tile[3])
+    #     if len(future_tiles) == 1:
+          
+    #       tile = future_tiles[0]
+    #       print 'Loading 1 future tile for z =',n, tile
+
+          
+    #       # if not n in self._views:
+    #       #   self._views[n] = [None]*len(self._zoomlevels)
+
+    #       # if not self._views[n][last_client_tile[3]]:
+    #       #   view = View(future_tiles, last_client_tile[3])
+    #       #   self._views[n][last_client_tile[3]] = view
+    #       #   self._viewing_queue.append(view)        
+    #       if tile._status.isVirgin():
+    #         tile._status.loading()
+    #         self._loading_queue.append(tile)
+    #         self._n += 1
 

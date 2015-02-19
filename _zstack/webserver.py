@@ -67,8 +67,13 @@ class WebServer:
       x = int(requested_tile[1])
       y = int(requested_tile[2])
       z = int(requested_tile[3])
+      image_top_left_x = int(requested_tile[4])
+      image_top_left_y = int(requested_tile[5])
+      image_bottom_right_x = int(requested_tile[6])
+      image_bottom_right_y = int(requested_tile[7])
+      image_roi = [image_top_left_x, image_top_left_y, image_bottom_right_x, image_bottom_right_y]
 
-      tile = self._manager.get(x, y, z, zoomlevel)
+      tile = self._manager.get(x, y, z, zoomlevel, image_roi)
 
       # right now block until we have the result.. maybe can be solved better
       while tile.shape == (0,):
