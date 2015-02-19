@@ -5,6 +5,42 @@ import time
 import tornado
 import tornado.gen
 import tornado.web
+import tornado.websocket
+
+cl = []
+
+class WebSocketHandler(tornado.websocket.WebSocketHandler):
+
+  def initialize(self, controller):
+    '''
+    '''
+    self.__controller = controller
+
+  def open(self):
+    '''
+    '''
+    if self not in cl:
+      cl.append(self)
+
+    self.__controller.handshake(self)
+
+  def on_close(self):
+    '''
+    '''
+    if self in cl:
+      cl.remove(self)
+
+  def on_message(self, message):
+    '''
+    '''
+    self.__controller.on_message(message)
+
+  def send(self, message, binary=True):
+    '''
+    '''
+    for c in cl:
+      c.write_message(message, binary=binary)
+
 
 class WebServerHandler(tornado.web.RequestHandler):
 
@@ -35,6 +71,7 @@ class WebServer:
 
     webapp = tornado.web.Application([
 
+      (r'/ws', WebSocketHandler, dict(controller=self._manager._websocket_controller)),
       (r'/viewer/(.*)', tornado.web.StaticFileHandler, dict(path=os.path.join(os.path.dirname(__file__),'../web'))),
       (r'/data/(.*)', WebServerHandler, dict(webserver=self))
   

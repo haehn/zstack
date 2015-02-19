@@ -6,6 +6,7 @@ import numpy as np
 import os
 import sys
 
+from websocketcontroller import WebSocketController
 from indexer import Indexer
 from level import Level
 from loader import Loader
@@ -38,6 +39,8 @@ class Manager(object):
     self._n = 1
     self._current_zoomlevel = -1
     self._current_client_tile = [None, None, None, None]
+
+    self._websocket_controller = WebSocketController(self)
 
   def start(self):
     '''
@@ -234,14 +237,18 @@ class Manager(object):
       # self._viewing_queue = []
       # self.get_next(x,y,z,zoomlevel)
 
+    new_roi = False
+
     if (self._current_roi[0] == -1):
       # we have a new roi
-      print 'NEW',self.image_roi_to_tiles(z, image_roi)
+      # print 'NEW',self.image_roi_to_tiles(z, image_roi)
+      new_roi = True
       self._current_roi = image_roi
 
     if self._current_roi[0] != image_roi[0] or self._current_roi[1] != image_roi[1] or self._current_roi[2] != image_roi[2] or self._current_roi[3] != image_roi[3]:
       # the roi changed
-      print self.image_roi_to_tiles(z, image_roi)
+      # print self.image_roi_to_tiles(z, image_roi)
+      new_roi = True
       self._current_roi = image_roi
     
     # if zoomlevel == 0:
@@ -280,6 +287,9 @@ class Manager(object):
       #   print 'Did not find view for layer', z, 'and zoomlevel', zoomlevel
       # we still need to load this zoomlevel
       view = View(self._sections[z]._tiles, zoomlevel)
+      # if not new_roi:
+      #   return np.empty(0)
+      # view = View(self.image_roi_to_tiles(self._current_roi), zoomlevel)
       # required_tiles = self.calc_tiles(x,y,z,zoomlevel)
 
       # view = View(required_tiles, zoomlevel)

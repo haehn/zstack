@@ -1,0 +1,50 @@
+<html>
+  <head>
+    <title>ZSTACK</title>
+    <script type='text/javascript'>
+
+    window.onload = function() {
+
+      ws = new WebSocket('ws://localhost:2001/ws');
+      ws.binaryType = 'arraybuffer';
+
+      ws.onmessage = function(msg) {
+        
+        var data = msg.data;
+ 
+        if (bytes2str(data.slice(0,7)) == "welcome") {
+          console.log('Websocket connection established.');
+
+
+        } else {
+
+          console.log('got image data', data.byteLength)
+          // imagedata = new Uint8Array(data);
+
+        }
+
+
+
+      }
+
+
+
+    };
+
+      function get_image(roi, zoomlevel) {
+
+        var out = {};
+        out.name = 'GET';
+        out.value = [roi, zoomlevel];
+        ws.send(JSON.stringify(out))
+      }
+
+      function bytes2str(data) {
+        return String.fromCharCode.apply(null, new Uint8Array(data));
+      }
+
+    </script>
+  </head>
+  <body id='body' style='margin:0px;padding:0px;'>
+  </body>
+</html>
