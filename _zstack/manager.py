@@ -32,7 +32,7 @@ class Manager(object):
 
     self._zoomlevels = None
 
-    self._client_tile_size = 512
+    self._client_tile_size = 1280
 
     self._current_roi = [-1, -1, -1, -1]
     self._current_z = -1
@@ -63,12 +63,17 @@ class Manager(object):
     # add the first sections to the viewing queue
     #
     # for z in range(2):
-    self._views[0] = [None]*len(self._zoomlevels)
+    # self._views[0] = [None]*len(self._zoomlevels)
     # for l in self._zoomlevels[:1:-1]: # but don't queue the two largest zoomlevels yet
-    for l in self._zoomlevels[::-1]:
-      view = View(self._sections[0]._tiles, l)
-      self._views[0][l] = view
-      self._viewing_queue.append(view)
+    # for l in self._zoomlevels[::-1]:
+      # view = View(self._sections[0]._tiles, l)
+      # self._views[0][l] = view
+      # self._viewing_queue.append(view)
+
+    # load the first section
+    for t in self._sections[0]._tiles:
+      t._status.loading()
+      self._loading_queue.append(t)
 
     # we start here
     self._current_z = 0
@@ -89,6 +94,7 @@ class Manager(object):
     '''
     print 'Stitched', view
     self._active_workers.get() # reduce worker counter
+    self._broadcaster.broadcast(u'done '+view._uid)
 
 
   def getContent(self):
@@ -161,14 +167,14 @@ class Manager(object):
 
       return tiles_required
 
-  def image_roi_to_tiles(self,z,image_roi):
+  def image_roi_to_tiles(self,z,zoomlevel,image_roi):
     '''
     '''
 
-    i_top_left = (image_roi[0], image_roi[1])
-    i_bottom_right = (image_roi[2], image_roi[3])
+    multiplicator = 2**zoomlevel
 
-    print i_top_left, i_bottom_right
+    i_top_left = (image_roi[0]*multiplicator, image_roi[2]*multiplicator)
+    i_bottom_right = (image_roi[1]*multiplicator, image_roi[3]*multiplicator)
 
     # check in which tile x_0 and y_0 are
     tiles_required = []
@@ -380,6 +386,7 @@ class Manager(object):
           view._bbox = bbox # re-attach the bounding box (since something could have changed)
 
           # allocate shared mem for view
+          # print bbox
           memory = mp.RawArray(ctypes.c_ubyte, bbox[1]*bbox[3])
           view._memory = memory # we need to keep a reference
           view._imagedata = Stitcher.shmem_as_ndarray(memory)

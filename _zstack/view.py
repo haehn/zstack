@@ -5,7 +5,7 @@ from status import Status
 
 class View(object):
 
-  def __init__(self, tiles, zoomlevel=0):
+  def __init__(self, tiles, zoomlevel=0, roi=None, uid=None):
     '''
     '''
     self._status = Status()
@@ -14,6 +14,8 @@ class View(object):
     self._zoomlevel = zoomlevel
     self._memory = None
     self._imagedata = None
+    self._roi = roi
+    self._uid = uid
 
 
   def __str__(self):

@@ -1,0 +1,123 @@
+<html>
+  <head>
+    <title>ZSTACK</title>
+    <script type='text/javascript'>
+
+    window.onload = function() {
+
+
+      var _container = document.getElementById('body');
+
+      _canvas = document.createElement('canvas');
+      _canvas.width = _container.clientWidth;
+      _canvas.height = _container.clientHeight;
+      _container.appendChild(_canvas);
+
+      ctx = _canvas.getContext('2d')
+
+      width = document.body.clientWidth
+      height = document.body.clientHeight
+      console.log(width, height)
+
+
+      ws = new WebSocket('ws://dragon.krash.net:2001/ws');
+      ws.binaryType = 'arraybuffer';
+
+      ws.onmessage = function(msg) {
+        
+        var data = msg.data;
+ 
+        if (bytes2str(data.slice(0,7)) == "welcome") {
+          console.log('Websocket connection established.');
+          
+
+        } else if (bytes2str(data.slice(0,4)) == "wait") {
+
+          console.log('Waiting for', bytes2str(data.slice(5)))
+
+        } else if (bytes2str(data.slice(0,4)) == "done") {
+          var uid = bytes2str(data.slice(5));
+          console.log('Ready to load', uid)
+          get_image(uid)
+
+        } else {
+
+          console.log('got image data', data.byteLength)
+          // var compressed = new Zlib.Inflate(new Uint8Array(data));
+          // imagedata = compressed.decompress();
+
+          // imagedata = new Uint8Array(data);
+          // console.log('uncompressed', imagedata.byteLength)
+          // r.draw(imagedata , width, height);
+
+          // convert data to a byte array
+          var bytebuffer = new Uint8Array(data);
+          var i = bytebuffer.length;
+          
+          // create a binary string of the bytebuffer
+          var binaryString = new Array(i);
+          while (i--) {
+            binaryString[i] = String.fromCharCode(bytebuffer[i]);
+          }
+          var convertedData = binaryString.join('');
+
+          // encode the converted binary string
+          var encodedData = window.btoa(convertedData);
+
+          var image = new Image();
+          image.src = 'data:image/jpeg;base64,'+encodedData;
+          image.onload = function() {
+            ctx.clearRect(0,0,_canvas.width, _canvas.height);
+            ctx.drawImage(image, 0, 0);
+          }
+
+        }
+
+
+
+      }
+
+
+
+    };
+
+      function test() {
+
+        for (var i=0; i<10;i++) {
+          doit(i);
+        }
+      }
+
+
+      function doit(z,i, zoomlevel) {
+        var offset_x = i*width;
+        var offset_y = i*height;
+        console.time(i)
+        prepare_image(z,[offset_x,offset_x+height,offset_y,offset_y+width],zoomlevel)
+      }
+
+      function prepare_image(z, roi, zoomlevel) {
+
+        var out = {};
+        out.name = 'PREPARE';
+        out.value = [z, roi, zoomlevel];
+        ws.send(JSON.stringify(out))
+      }
+
+      function get_image(uid) {
+        var out = {};
+        out.name = 'GET';
+        out.value = [uid];
+        ws.send(JSON.stringify(out))
+      }
+
+
+      function bytes2str(data) {
+        return String.fromCharCode.apply(null, new Uint8Array(data));
+      }
+    </script>
+
+  </head>
+  <body id='body' style='margin:0px;padding:0px;width:100%;height:100%;'>
+  </body>
+</html>

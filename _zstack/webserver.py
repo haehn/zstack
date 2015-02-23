@@ -11,10 +11,12 @@ cl = []
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
-  def initialize(self, controller):
+  def initialize(self, manager):
     '''
     '''
-    self.__controller = controller
+    self._manager = manager
+    self._manager._broadcaster = self
+    self.__controller = self._manager._websocket_controller
 
   def open(self):
     '''
@@ -36,6 +38,12 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     self.__controller.on_message(message)
 
   def send(self, message, binary=True):
+    '''
+    '''
+    # for c in cl:
+    self.write_message(message, binary=binary)
+
+  def broadcast(self, message, binary=True):
     '''
     '''
     for c in cl:
@@ -71,7 +79,7 @@ class WebServer:
 
     webapp = tornado.web.Application([
 
-      (r'/ws', WebSocketHandler, dict(controller=self._manager._websocket_controller)),
+      (r'/ws', WebSocketHandler, dict(manager=self._manager)),
       (r'/viewer/(.*)', tornado.web.StaticFileHandler, dict(path=os.path.join(os.path.dirname(__file__),'../web'))),
       (r'/data/(.*)', WebServerHandler, dict(webserver=self))
   
@@ -117,9 +125,10 @@ class WebServer:
         # loop = IOLoop.instance()
         # yield gen.Task(loop.add_timeout, time.time() + 5)
         self._manager.process()
-        tile = self._manager.get(x, y, z, zoomlevel)
+        tile = self._manager.get(x, y, z, zoomlevel, image_roi)
       
-      content = cv2.imencode('.jpg', tile[y*512:y*512+512,x*512:x*512+512])[1].tostring()
+      ts = self._manager._client_tile_size
+      content = cv2.imencode('.jpg', tile[y*ts:y*ts+ts,x*ts:x*ts+ts])[1].tostring()
       content_type = 'image/jpeg'
 
     # invalid request

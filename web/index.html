@@ -16,6 +16,10 @@
           
           for (var i=0; i<content.length; i++) {
             // content[i].minLevel = 1
+            content[i].tileSize = 1280
+            content[i].getTileSize = function( level ) {
+              return document.body.clientWidth;
+            }
             content[i].getTileUrl = function( level, x, y ) {
                                       // in openseadragon:
                                       // 0: smallest
