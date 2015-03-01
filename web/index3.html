@@ -69,6 +69,7 @@
           image.onload = function() {
             ctx.clearRect(0,0,_canvas.width, _canvas.height);
             ctx.drawImage(image, 0, 0);
+            console.timeEnd("a");
           }
 
         }
@@ -92,7 +93,7 @@
       function doit(z,i, zoomlevel) {
         var offset_x = i*width;
         var offset_y = i*height;
-        console.time(i)
+        console.time("a")
         prepare_image(z,[offset_x,offset_x+height,offset_y,offset_y+width],zoomlevel)
       }
 

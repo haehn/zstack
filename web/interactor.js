@@ -1,6 +1,6 @@
-var J = J || {};
+var D = D || {};
 
-J.interactor = function(viewer) {
+D.interactor = function(viewer) {
 
   this._viewer = viewer;
   this._camera = this._viewer._camera;
@@ -16,7 +16,7 @@ J.interactor = function(viewer) {
 
 };
 
-J.interactor.prototype.init = function() {
+D.interactor.prototype.init = function() {
 
   // mouse move
   this._viewer._canvas.onmousemove = this.onmousemove.bind(this);
@@ -37,7 +37,7 @@ J.interactor.prototype.init = function() {
 
 };
 
-J.interactor.prototype.onmousemove = function(e) {
+D.interactor.prototype.onmousemove = function(e) {
 
   var x = e.clientX;
   var y = e.clientY;
@@ -53,17 +53,18 @@ J.interactor.prototype.onmousemove = function(e) {
 
   } else if (this._right_down) {
     // pan
-    this._camera.pan(x-this._last_mouse[0], y-this._last_mouse[1]);    
+    this._camera.pan(x-this._last_mouse[0], y-this._last_mouse[1]);
+
   } else {
     // show current label
-    DOJO.update_label(x, y);
+    //DOJO.update_label(x, y);
   }
 
   this._last_mouse = [x, y];
 
 };
 
-J.interactor.prototype.onmousedown = function(e) {
+D.interactor.prototype.onmousedown = function(e) {
 
   var x = e.clientX;
   var y = e.clientY;
@@ -76,7 +77,7 @@ J.interactor.prototype.onmousedown = function(e) {
     // left
     this._left_down = true;
 
-    DOJO.onleftclick(x, y);
+    //DOJO.onleftclick(x, y);
 
   } else if (e.button == 2) {
     // right
@@ -85,12 +86,12 @@ J.interactor.prototype.onmousedown = function(e) {
 
 };
 
-J.interactor.prototype.onmouseup = function(e) {
+D.interactor.prototype.onmouseup = function(e) {
 
   var x = e.clientX;
   var y = e.clientY;
 
-  DOJO.onmouseup(x, y);
+  // DOJO.onmouseup(x, y);
 
   if (e.button == 0) {
     // left
@@ -102,7 +103,7 @@ J.interactor.prototype.onmouseup = function(e) {
 
 };
 
-J.interactor.prototype.onmousewheel = function(e) {
+D.interactor.prototype.onmousewheel = function(e) {
 
   var delta = e.wheelDelta || -e.detail;
 
@@ -117,7 +118,7 @@ J.interactor.prototype.onmousewheel = function(e) {
 
 };
 
-J.interactor.prototype.onkeydown = function(e) {
+D.interactor.prototype.onkeydown = function(e) {
   
   if (!this._viewer._image_buffer_ready) return;
 

@@ -1,4 +1,18 @@
+function bytes2str(bytebuffer, length) {
 
+  if (typeof length === 'undefined') {
+    var length = bytebuffer.byteLength;
+  }
+
+  var binaryString = new Array(length);
+  var bytes = new Uint8Array(bytebuffer);
+  while (length--) {
+    binaryString[length] = String.fromCharCode(bytes[length]);
+  }
+  var convertedData = binaryString.join('');
+
+  return convertedData;
+};
 
 function nearestPOT(value) {
 
