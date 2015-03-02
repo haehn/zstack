@@ -73,7 +73,7 @@ class Manager(object):
 
     # load the first section
     for s in self._sections:
-      for t in self._sections[s]._tiles:
+      for t in s._tiles:
         t._status.loading()
         self._loading_queue.append(t)
 
