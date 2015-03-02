@@ -26,10 +26,12 @@ D.controller.prototype.receive = function(message) {
   } else if (bytes2str(data.slice(0,4), 4) == "done") {
 
     var uid = bytes2str(data.slice(5));
-    this._uids[uid] = true;
-    console.log('Ready to load', uid)
+    if (uid in this._uids) {
+      this._uids[uid] = true;
+      console.log('Ready to load', uid)
 
-    this.load_data(uid);
+      this.load_data(uid);
+    }
     
   } else {
 

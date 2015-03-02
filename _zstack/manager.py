@@ -72,9 +72,10 @@ class Manager(object):
       # self._viewing_queue.append(view)
 
     # load the first section
-    for t in self._sections[0]._tiles:
-      t._status.loading()
-      self._loading_queue.append(t)
+    for s in self._sections:
+      for t in self._sections[s]._tiles:
+        t._status.loading()
+        self._loading_queue.append(t)
 
     # we start here
     self._current_z = 0
