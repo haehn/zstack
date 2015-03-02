@@ -36,7 +36,8 @@ D.websocket.prototype.on_open = function() {
 D.websocket.prototype.on_message = function(m) {
 
   // console.log('Received', m);
-  this._viewer._controller.receive(m);
+  if (this._viewer)
+    this._viewer._controller.receive(m);
 
 };
 

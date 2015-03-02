@@ -125,7 +125,7 @@ class WebServer:
         # loop = IOLoop.instance()
         # yield gen.Task(loop.add_timeout, time.time() + 5)
         self._manager.process()
-        tile = self._manager.get(x, y, z, zoomlevel, image_roi)
+        tile = self._manager.get(x, y, z, zoomlevel, image_roi, None)
       
       ts = self._manager._client_tile_size
       content = cv2.imencode('.jpg', tile[y*ts:y*ts+ts,x*ts:x*ts+ts])[1].tostring()

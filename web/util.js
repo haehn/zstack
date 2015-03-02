@@ -14,6 +14,14 @@ function bytes2str(bytebuffer, length) {
   return convertedData;
 };
 
+
+// from http://jsperf.com/signs/3
+function sign (x) {
+  return typeof x === 'number' ? x ? x < 0 ? -1 : 1 : x === x ? 0 : NaN : NaN;
+}
+
+
+
 function nearestPOT(value) {
 
   var v = value;

@@ -61,7 +61,7 @@ class WebSocketController(object):
     elif message['name'] == 'GET':
       uid = message['value'][0]
 
-      if not self._manager._views[uid]._status.isLoaded():
+      if not uid in self._manager._views or not self._manager._views[uid]._status.isLoaded():
         self._websocket.send(u'wait '+uid)
       else:
 

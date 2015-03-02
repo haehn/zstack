@@ -2,9 +2,12 @@
   <head>
     <title>ZSTACK</title>
     <script type='text/javascript' src='openseadragon.min.js'></script>
+    <script type='text/javascript' src='websocket.js'></script>
     <script type='text/javascript'>
 
     window.onload = function() {
+
+      var WS = new D.websocket(null);
 
       // grab content listing
       var r = new XMLHttpRequest();
@@ -16,10 +19,10 @@
           
           for (var i=0; i<content.length; i++) {
             // content[i].minLevel = 1
-            content[i].tileSize = 1280
-            content[i].getTileSize = function( level ) {
-              return document.body.clientWidth;
-            }
+            // content[i].tileSize = 1280
+            // content[i].getTileSize = function( level ) {
+            //   return document.body.clientWidth;
+            // }
             content[i].getTileUrl = function( level, x, y ) {
                                       // in openseadragon:
                                       // 0: smallest

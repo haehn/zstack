@@ -8,7 +8,7 @@ D.camera = function(viewer) {
   this._x = 0;
   this._y = 0;
   this._z = 0;
-  this._w = 1;
+  this._w = 0;
 
   // we need to cache this here since manipulations to the camera matrix might mess things up
   this._i_j = [0, 0];
@@ -79,84 +79,47 @@ D.camera.prototype.jump = function(i, j, k) {
 ///
 D.camera.prototype.zoom = function(x, y, delta) {
 
-  // don't zoom when using adjust or split
-  if (this._viewer._controller._split_mode != -1) return;
-  if (this._viewer._controller._adjust_mode != -1) return;
-
-  // perform linear zooming until a new image zoom level is reached
-  // then reset scale to 1 and show the image
-
-  this._viewer._controller.clear_exclamationmarks();
-  this._viewer._controller.reset_cursors();
-
-  var u_v = this._viewer.xy2uv(x,y);
-
-  // only do stuff if we are over the image data
-  if (u_v[0] == -1 || u_v[1] == -1) {
-    return;
-  }
-
-  if (this._zoom_end_timeout) clearTimeout(this._zoom_end_timeout);
-
   var wheel_sign = sign(delta/120);
 
-  var future_w = this._w - wheel_sign;
+
   var future_zoom_level = Math.round((this._view[0] + wheel_sign * this._linear_zoom_factor)*10)/10;
+
 
   // clamp the linear pixel zoom
   if (future_zoom_level < 1.0 || future_zoom_level >= 5.0) return;
 
-  if (future_w >= 0 && future_w < this._viewer._image.zoomlevel_count) {
-    // start loading the tiles immediately but set no_draw to true
-    this._loader.load_tiles(x, y, this._z, this._w, future_w, true);
-  }
+
+  var u = x - this._view[6];
+  var v = y - this._view[7];
+
+  var u_v = [u, v]
+
 
   var old_scale = this._view[0];
 
-  // perform pixel zooming
   this._view[0] = future_zoom_level;
   this._view[4] = future_zoom_level;
 
-  // console.log(future_zoom_level);
-
   var new_scale = future_zoom_level;
 
-  // here we check if we pass an image zoom level, if yes we need to draw other tiles
   if ((new_scale >= 2 && wheel_sign > 0) || (new_scale-this._linear_zoom_factor < 1 && wheel_sign < 0)) {
 
-    future_zoom_level = this._w - wheel_sign;
+    if (wheel_sign > 0) {
 
-    // clamp zooming
-    if (future_zoom_level >= 0 && future_zoom_level < this._viewer._image.zoomlevel_count) {
+      this._w++;
 
-      // this._viewer.loading(true);
+    } else {
 
-      // this time we really draw (no_draw = false)
-      this._loader.load_tiles(x, y, this._z, this._w, future_zoom_level, false);
-      
-      this._w = future_zoom_level;
+      this._w--;      
 
-      if (wheel_sign < 0) {
+    }
 
-        // zooming out
-        old_scale *= 2;
-        new_scale *= 2;
-        
-      } else {
+    var roi = []
 
-        // zooming in
-        new_scale /= 2;
-        old_scale /= 2;
-
-
-      }
-
-      this._view[0] = new_scale;
-      this._view[4] = new_scale;
-
-    }    
+    // this._controller.request_data(this._z, , this._w)
     
   }
+
 
   u_new = u_v[0]/old_scale * new_scale;
   v_new = u_v[1]/old_scale * new_scale;
@@ -165,8 +128,6 @@ D.camera.prototype.zoom = function(x, y, delta) {
   this._view[6] -= wheel_sign * Math.abs(u_v[0] - u_new);
   this._view[7] -= wheel_sign * Math.abs(u_v[1] - v_new);  
 
-  this._zoom_end_timeout = setTimeout(this.zoom_end.bind(this), 60);
-
 };
 
 D.camera.prototype.pan = function(dx, dy) {
@@ -174,10 +135,10 @@ D.camera.prototype.pan = function(dx, dy) {
   this._view[6] += dx;
   this._view[7] += dy;
 
-  this._viewer._controller.clear_exclamationmarks();
-  this._viewer._controller.reset_cursors();
+  // this._viewer._controller.clear_exclamationmarks();
+  // this._viewer._controller.reset_cursors();
 
-  this._loader.load_tiles(this._x, this._y, this._z, this._w, this._w, false);
+  // this._loader.load_tiles(this._x, this._y, this._z, this._w, this._w, false);
 
 };
 

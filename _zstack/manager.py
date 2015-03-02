@@ -5,6 +5,7 @@ import multiprocessing as mp
 import numpy as np
 import os
 import sys
+import uuid
 
 from websocketcontroller import WebSocketController
 from indexer import Indexer
@@ -32,7 +33,7 @@ class Manager(object):
 
     self._zoomlevels = None
 
-    self._client_tile_size = -1
+    self._client_tile_size = 512
 
     self._current_roi = [-1, -1, -1, -1]
     self._current_z = -1
@@ -227,19 +228,33 @@ class Manager(object):
 
 
 
-  def get(self,x,y,z,zoomlevel,image_roi):
+  def get(self,x,y,z,zoomlevel,image_roi, uid=None):
     '''
     Grab data using the client tile format.
     '''
 
-    req_tiles = self.image_roi_to_tiles(z, zoomlevel, image_roi)
-    print req_tiles
-    uid = uuid.uuid4()
-    view = View(req_tiles, zoomlevel, roi, uid.hex)
-    # self._manager._views[z][zoomlevel] = view
-    self._viewing_queue.append(view)
-    self._views[uid.hex] = view
-    return np.empty(0)
+    # if not uid:
+    #   # req_tiles = self.image_roi_to_tiles(z, zoomlevel, image_roi)
+    #   req_tiles = self._sections[z]._tiles
+    #   uid = uuid.uuid4()
+    #   view = View(req_tiles, zoomlevel, image_roi, uid.hex)
+    #   # self._manager._views[z][zoomlevel] = view
+    #   self._viewing_queue.append(view)
+    #   self._views[uid.hex] = view
+    #   return np.array(uid.hex)
+
+    # else:
+
+    #   view = self._views[uid.tostring()]
+    #   if view._status.isLoaded():
+    #     # yes, it is - we can immediately get the data
+    #     data = view._imagedata
+    #     bbox = view._bbox
+    #     data = data.reshape(bbox[3], bbox[1])
+    #     return data
+
+    #   else:
+    #     return np.array(uid)
 
     # if (z != self._current_z):
       # we are navigating from slice to slice
@@ -275,57 +290,58 @@ class Manager(object):
     # self._current_zoomlevel = zoomlevel
 
     # check if we have data for this tile
-    # if not z in self._views:
-    #   self._views[z] = [None]*len(self._zoomlevels)
+    if not z in self._views:
+      self._views[z] = [None]*len(self._zoomlevels)
 
-    # view = self._views[z][zoomlevel]
+    view = self._views[z][zoomlevel]
 
-    # if not view:
+    if not view:
       # if we have a higher zoomlevel, exit
       # if self._views[z][0]:
       #   view = self._views[z][0]
       # else:
       #   print 'Did not find view for layer', z, 'and zoomlevel', zoomlevel
-    #   # we still need to load this zoomlevel
-    # view = View(self._sections[z]._tiles, zoomlevel)
-    #   # if not new_roi:
-    #   #   return np.empty(0)
-    #   # view = View(self.image_roi_to_tiles(self._current_roi), zoomlevel)
-    #   # required_tiles = self.calc_tiles(x,y,z,zoomlevel)
+      # we still need to load this zoomlevel
+      uid = uuid.uuid4()
+      view = View(self._sections[z]._tiles, zoomlevel, image_roi, uid.hex)
+      # if not new_roi:
+      #   return np.empty(0)
+      # view = View(self.image_roi_to_tiles(self._current_roi), zoomlevel)
+      # required_tiles = self.calc_tiles(x,y,z,zoomlevel)
 
-    #   # view = View(required_tiles, zoomlevel)
-    #   self._views[z][zoomlevel] = view
-    #   self._viewing_queue.append(view) # add it to the viewing queue
+      # view = View(required_tiles, zoomlevel)
+      self._views[z][zoomlevel] = view
+      self._viewing_queue.append(view) # add it to the viewing queue
 
-    #   # if len(required_tiles) == 1:
-    #   #   # this view only requires one tile one disk
-    #   #   # for i in range(5):
-    #   #   z += 1
-    #   #   tile = self.calc_tiles(x,y,z,zoomlevel)[0]
-    #   #   tile._status.loading()
-    #   #   self._loading_queue.append(tile)      
-    #       # view = View(required_tiles, zoomlevel)
-    #       # self._views[z][zoomlevel] = view
-    #       # self._viewing_queue.append(view) # add it to the viewing queue        
+      # if len(required_tiles) == 1:
+      #   # this view only requires one tile one disk
+      #   # for i in range(5):
+      #   z += 1
+      #   tile = self.calc_tiles(x,y,z,zoomlevel)[0]
+      #   tile._status.loading()
+      #   self._loading_queue.append(tile)      
+          # view = View(required_tiles, zoomlevel)
+          # self._views[z][zoomlevel] = view
+          # self._viewing_queue.append(view) # add it to the viewing queue        
 
-    #   # view = View(self.get_next(x,y,z,zoomlevel), zoomlevel)      
-    #   # self._views[z+1][zoomlevel] = view
-    #   # self._viewing_queue.append(view)
-    #   return np.empty(0) # and jump out
+      # view = View(self.get_next(x,y,z,zoomlevel), zoomlevel)      
+      # self._views[z+1][zoomlevel] = view
+      # self._viewing_queue.append(view)
+      return np.empty(0) # and jump out
 
-    # # here we definitely have a view for this section with the right zoomlevel
-    # # but we have to check if it was fully loaded yet
+    # here we definitely have a view for this section with the right zoomlevel
+    # but we have to check if it was fully loaded yet
 
-    # # TODO we need to check if the tiles cover our ROI  
+    # TODO we need to check if the tiles cover our ROI  
 
-    # if view._status.isLoaded():
-    #   # yes, it is - we can immediately get the data
-    #   data = view._imagedata
-    #   bbox = view._bbox
-    #   data = data.reshape(bbox[3], bbox[1])
-    #   return data
+    if view._status.isLoaded():
+      # yes, it is - we can immediately get the data
+      data = view._imagedata
+      bbox = view._bbox
+      data = data.reshape(bbox[3], bbox[1])
+      return data
 
-    # return np.empty(0) # and jump out
+    return np.empty(0) # and jump out
 
 
   def process(self):
